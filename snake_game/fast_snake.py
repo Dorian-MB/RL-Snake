@@ -4,7 +4,7 @@ import numpy as np
 
 N = 30
 
-class SnakeGame:
+class FastSnakeGame:
     def __init__(self, size=N):
         self.size = size
         self.reset()

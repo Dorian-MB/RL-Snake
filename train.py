@@ -103,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument("--use-frame-stack", action='store_true', help="Whether to use frame stacking.")
     parser.add_argument("-u", "--use-policy-kwargs", action='store_true', help="Whether to use custom policy kwargs for the model.")
     parser.add_argument("-v", "--verbose", type=int, default=1, help="Verbosity level for training output.")
-    parser.add_argument("-x", "--multiplicator", type=float, default=1/10, help="Multiplicator for total timesteps.")
+    parser.add_argument("-x", "--multiplicator", type=float, default=5, help="Multiplicator for total timesteps.")
     args = parser.parse_args()
 
     trainer = ModelTrainer(

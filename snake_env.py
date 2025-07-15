@@ -1,6 +1,7 @@
 import gymnasium as gym
 import numpy as np
-from snake_ui import SnakeGame
+from snake_game.snake_game import SnakeGame
+from snake_game.fast_snake import FastSnakeGame
 
 OBS_SHAPE = 6
 SHAPE = (OBS_SHAPE, )
@@ -13,7 +14,7 @@ class SnakeEnv(gym.Env):
     close(): This method performs any necessary cleanup, like closing the game window.
     """
     
-    def __init__(self, game_size:int=0):
+    def __init__(self, game_size:int=0, game_class=FastSnakeGame):
         super(SnakeEnv, self).__init__()
         self.action_space = gym.spaces.Discrete(4) # Output
         self.observation_space = gym.spaces.Box(low=-4, high=5, shape=SHAPE, dtype=np.float64)
@@ -22,10 +23,11 @@ class SnakeEnv(gym.Env):
         self.spec = None
         self.metadata = {"renders_mode":["human"]}
         self.game_size = game_size
+        self.game_class = game_class
         self._init()    
     
     def _init(self):
-        self.snake_game = SnakeGame(self.game_size)
+        self.snake_game = self.game_class(self.game_size)
         food = np.array(self.snake_game.food)
         head = np.array(self.snake_game.snake[0])
         self._last_distance = self.euclidean_distance(head=head, food=food)
