@@ -7,10 +7,10 @@ import numpy as np
 import time
 
 
-def get_env(n_envs:int=5, use_frame_stack:bool=False, n_stack:int=4, game_size:int=10):
+def get_env(n_envs:int=5, use_frame_stack:bool=False, n_stack:int=4, game_size:int=10, fast_game:bool=True):
     # make_vec_env handle the multiprocessing details
     env = make_vec_env(
-        lambda: SnakeEnv(game_size=game_size), 
+        lambda: SnakeEnv(game_size=game_size, fast_game=fast_game),  # Use a lambda to pass parameters to the environment
         n_envs=n_envs,  
         seed=42    
     )
@@ -20,7 +20,7 @@ def get_env(n_envs:int=5, use_frame_stack:bool=False, n_stack:int=4, game_size:i
 
 
 class ModelLoader:
-    def __init__(self, name:str, use_frame_stack:bool=False, game_size:int=30, n_stack:int=4):
+    def __init__(self, name:str, use_frame_stack:bool=False, game_size:int=30, n_stack:int=4, fast_game:bool=True):
         name = name if name.endswith(".zip") else f"{name}.zip"
         path = Path().cwd() / "model" / name
         if not path.exists():
@@ -28,18 +28,20 @@ class ModelLoader:
         self.n_stack = n_stack
         self.use_frame_stack = use_frame_stack
         self.name = name
+        self.game_size = game_size
+        self.fast_game = fast_game
 
         if "PPO" in name:
-            self.model = PPO.load(path, env=get_env(use_frame_stack=use_frame_stack, game_size=game_size, n_stack=n_stack))  
+            self.model = PPO.load(path, env=get_env(use_frame_stack=use_frame_stack, game_size=game_size, n_stack=n_stack, fast_game=fast_game))  
         elif "DQN" in name:
-            self.model = DQN.load(path, env=get_env(use_frame_stack=use_frame_stack, game_size=game_size, n_stack=n_stack))  
+            self.model = DQN.load(path, env=get_env(use_frame_stack=use_frame_stack, game_size=game_size, n_stack=n_stack, fast_game=fast_game))  
         else:
             raise ValueError(f"Model {name} is not supported for rendering.")
 
 class ModelRenderer(ModelLoader):
-    def __init__(self, name:str, use_frame_stack:bool=False, game_size:int=30, n_stack:int=4):
-        super().__init__(name, use_frame_stack, game_size, n_stack)
-        self.env = SnakeEnv(game_size=game_size)
+    def __init__(self, name:str, use_frame_stack:bool=False, game_size:int=30, n_stack:int=4, fast_game:bool=True):
+        super().__init__(name, use_frame_stack, game_size, n_stack, fast_game=fast_game)
+        self.env = SnakeEnv(game_size=game_size, fast_game=fast_game)
         
     def render(self):
         obs, _ = self.env.reset()
@@ -63,4 +65,5 @@ class ModelRenderer(ModelLoader):
             print("distance to food:", obs.take(-2))
             print(f"step :{step}")
             self.env.render()
+            time.sleep(0.1)
         self.env.close()

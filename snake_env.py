@@ -14,7 +14,7 @@ class SnakeEnv(gym.Env):
     close(): This method performs any necessary cleanup, like closing the game window.
     """
     
-    def __init__(self, game_size:int=0, game_class=FastSnakeGame):
+    def __init__(self, game_size:int=0, fast_game:bool=True):
         super(SnakeEnv, self).__init__()
         self.action_space = gym.spaces.Discrete(4) # Output
         self.observation_space = gym.spaces.Box(low=-4, high=5, shape=SHAPE, dtype=np.float64)
@@ -23,11 +23,11 @@ class SnakeEnv(gym.Env):
         self.spec = None
         self.metadata = {"renders_mode":["human"]}
         self.game_size = game_size
-        self.game_class = game_class
+        self.SnakeGameHandler = SnakeGame if not fast_game else FastSnakeGame
         self._init()    
     
     def _init(self):
-        self.snake_game = self.game_class(self.game_size)
+        self.snake_game = self.SnakeGameHandler(self.game_size)
         food = np.array(self.snake_game.food)
         head = np.array(self.snake_game.snake[0])
         self._last_distance = self.euclidean_distance(head=head, food=food)
@@ -129,5 +129,5 @@ class SnakeEnv(gym.Env):
 
 if __name__ == "__main__":
     from utils import ModelRenderer
-    model = ModelRenderer(name="PPO_N30_snake",game_size=15, use_frame_stack=False)
+    model = ModelRenderer(name="PPO__snake",game_size=16, use_frame_stack=False, fast_game=False)
     model.render()
