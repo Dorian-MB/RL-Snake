@@ -1,7 +1,7 @@
 import random
 import numpy as np
 import pygame 
-from constant import GameConstants
+from src.constant.constant import GameConstants
 
 class Snake_cell(pygame.Rect):
     def __init__(self, x, y, width, height):

@@ -2,15 +2,15 @@
 import random
 import numpy as np
 
-N = 30
+game_size = 30
 
 class FastSnakeGame:
-    def __init__(self, size=N):
-        self.size = size
+    def __init__(self, game_size=game_size):
+        self.game_size = game_size
         self.reset()
 
     def reset(self):
-        self.snake = [(self.size // 2, self.size // 2)]
+        self.snake = [(self.game_size // 2, self.game_size // 2)]
         self.score = 0
         self.food = None
         self._place_food()
@@ -18,7 +18,7 @@ class FastSnakeGame:
 
     def _place_food(self):
         while self.food is None or self.food in self.snake:
-            self.food = (random.randint(0, self.size - 1), random.randint(0, self.size - 1))
+            self.food = (random.randint(0, self.game_size - 1), random.randint(0, self.game_size - 1))
 
     def step(self, action):
         if self.game_over:
@@ -28,7 +28,7 @@ class FastSnakeGame:
         direction = [(-1, 0), (0, -1), (1, 0),  (0, 1)][action]
         new_head = (self.snake[0][0] + direction[0], self.snake[0][1] + direction[1])
         # Check for game over conditions
-        if (new_head in self.snake) or new_head[0] < 0 or new_head[0] >= self.size or new_head[1] < 0 or new_head[1] >= self.size:
+        if (new_head in self.snake) or new_head[0] < 0 or new_head[0] >= self.game_size or new_head[1] < 0 or new_head[1] >= self.game_size:
             self.game_over = True
             return self.raw_obs, self.score, self.game_over, {}
 
@@ -48,7 +48,7 @@ class FastSnakeGame:
         return self.get_raw_observation()
     
     def get_raw_observation(self):
-        raw_obs = np.zeros((self.size, self.size))
+        raw_obs = np.zeros((self.game_size, self.game_size))
         coords = np.array(self.snake)
         raw_obs[coords[:, 0], coords[:, 1]] = 1
         x, y = self.food
