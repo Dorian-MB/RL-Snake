@@ -2,22 +2,18 @@
 
 import numpy as np
 from stable_baselines3 import PPO, DQN, A2C
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import VecFrameStack
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.utils import get_schedule_fn
 from colorama import Fore
+from tqdm.auto import tqdm
 
-from ..environment.utils import get_env
-from ..environment.snake_env import SnakeEnv
-from ..environment.utils import ModelLoader
+from .utils import get_env, Logger, ModelLoader
 from .feature_extractor import LinearQNet
 from .callbacks import create_snake_callbacks
 from ..config.config import Config, create_argument_parser, load_config, create_callbacks_from_config
 
 from pathlib import Path
 import time
-import logging
 
 
 class ModelTrainer:
@@ -64,8 +60,7 @@ class ModelTrainer:
         self.progress_bar = progress_bar
         self.verbose = verbose
         self.callback_list = callback_list or create_snake_callbacks()
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG if verbose > 0 else logging.INFO)  # Set logging level based on verbosity
+        self.logger = Logger()
 
         # Create training environment
         self.train_env = get_env(
@@ -132,7 +127,8 @@ class ModelTrainer:
                 policy_kwargs=policy_kwargs, 
                 verbose=self.verbose,
                 learning_rate=get_schedule_fn(0.0003), 
-                n_steps=100
+                n_steps=100, # Number of steps per update 
+                batch_size=100, # Mini-batch size, warning: n_steps*n_envs % batch_size must be divisible, otherwise training can be inconsistent
             )               
         elif model_name == "DQN":
             self.log_interval = 4
@@ -164,12 +160,13 @@ class ModelTrainer:
         else:
             raise ValueError(f"Model {model_name} is not supported.")
         return model
-    
-    def train(self, multiplicator: float = 10):
+
+    def train(self, total_timesteps:int=10_000, multiplicator: float = 1):
         """
         Train the model with periodic evaluation.
         
         Args:
+            total_timesteps: Total number of timesteps for training
             multiplicator: Multiplier for total training timesteps
         """
         # Configure logging (TensorBoard)
@@ -185,28 +182,28 @@ class ModelTrainer:
             fast_game=self.fast_game
         )
 
-        total_timesteps = int(100_000 * multiplicator)
+        total_timesteps = int(total_timesteps * multiplicator)
         eval_interval = 10_000
         num_eval_episodes = 5
 
-        self.logger.debug(f"{Fore.CYAN}Starting training with {total_timesteps:,} timesteps{Fore.RESET}")
+        self.logger.info(f"{Fore.CYAN}Starting training with {total_timesteps:,} timesteps{Fore.RESET}")
         
         # Training loop with periodic evaluation
         start_time = time.perf_counter()
         for step in range(0, total_timesteps, eval_interval):
-            self.logger.debug(f"{Fore.YELLOW}Training step {step//eval_interval + 1}/{total_timesteps//eval_interval}{Fore.RESET}")
+            self.logger.info(f"{Fore.YELLOW}Training step {step//eval_interval + 1}/{total_timesteps//eval_interval}{Fore.RESET}")
             self.model.learn(total_timesteps=eval_interval, 
                              reset_num_timesteps=False,
                              log_interval=self.log_interval if self.verbose > 1 else None, 
                              progress_bar=self.progress_bar,
                              callback=self.callback_list
                             )
-            avg_reward = np.round(self.evaluate_model(eval_env, num_episodes=num_eval_episodes))
+            avg_reward = list(np.round(self.evaluate_model(eval_env, num_episodes=num_eval_episodes), 2))
             
-            self.logger.debug(f"{Fore.GREEN}Evaluation average reward: {avg_reward:.2f}{Fore.RESET}")
+            self.logger.info(f"{Fore.GREEN}Evaluation average reward: {avg_reward}{Fore.RESET}")
             
         elapsed_time = time.perf_counter() - start_time
-        self.logger.debug(f"{Fore.GREEN}===Training completed in {elapsed_time:.2f} seconds==={Fore.RESET}")
+        self.logger.info(f"{Fore.GREEN}===Training completed in {elapsed_time:.2f} seconds==={Fore.RESET}")
         
     def evaluate_model(self, eval_env, num_episodes=10):
         """
@@ -220,8 +217,8 @@ class ModelTrainer:
             Average reward across episodes
         """
         all_rewards = []
-        
-        for episode in range(num_episodes):
+
+        for _ in tqdm(range(num_episodes), desc="Evaluating", total=num_episodes):
             obs = eval_env.reset()
             # Handle different environment return formats
             if isinstance(obs, tuple):
@@ -254,7 +251,7 @@ class ModelTrainer:
                 
             all_rewards.append(total_rewards)
         
-        average_reward = np.sum(all_rewards) / num_episodes
+        average_reward = sum(all_rewards) / num_episodes
         return average_reward
 
     def save(self, name=""):
@@ -272,7 +269,7 @@ class ModelTrainer:
         save_path = model_dir / save_name
         
         self.model.save(save_path)
-        self.logger.debug(f"{Fore.GREEN}Model saved to: {save_path}{Fore.RESET}")
+        self.logger.info(f"{Fore.GREEN}Model saved to: {save_path}{Fore.RESET}")
 
 
 def main():
@@ -288,7 +285,8 @@ def main():
     trainer = ModelTrainer.from_config(config)
     
     # Train and save model
-    trainer.train(multiplicator=config.training.multiplicator)
+    trainer.train(total_timesteps=config.training.total_timesteps, 
+                  multiplicator=config.training.multiplicator)
     trainer.save(name=config.model.save_name)
     
 if __name__ == "__main__":

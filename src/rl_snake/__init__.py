@@ -9,9 +9,6 @@ __author__ = "Dorian"
 
 # Import main components
 try:
-    from .config.constants import GameConstants
-    from .game.snake import SnakeGame, Snake, SnakeCell, Food
-    from .game.fast_snake import FastSnakeGame
     from .environment.snake_env import SnakeEnv
     from .agents.trainer import ModelTrainer
     from .agents.feature_extractor import LinearQNet
@@ -21,12 +18,6 @@ except ImportError:
     pass
 
 __all__ = [
-    "GameConstants",
-    "SnakeGame", 
-    "Snake",
-    "SnakeCell",
-    "Food",
-    "FastSnakeGame",
     "SnakeEnv",
     "ModelTrainer",
     "LinearQNet",

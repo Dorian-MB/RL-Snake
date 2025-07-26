@@ -3,9 +3,6 @@
 import gymnasium as gym
 import numpy as np
 
-from ..game.snake import SnakeGame
-from ..game.fast_snake import FastSnakeGame
-
 OBS_SHAPE = 6
 SHAPE = (OBS_SHAPE,)
 
@@ -37,7 +34,14 @@ class BaseSnakeEnv(gym.Env):
         self.metadata = {"render_modes": ["human"]}
         self.game_size = game_size
         self.fast_game = fast_game
-        self.SnakeGameHandler = SnakeGame if not fast_game else FastSnakeGame
+
+        if fast_game:
+            from ..game.fast_snake import FastSnakeGame
+            self.SnakeGameHandler = FastSnakeGame
+        else:
+            from ..game.snake import SnakeGame
+            self.SnakeGameHandler = SnakeGame
+
         self.snake_game = self.SnakeGameHandler(self.game_size)
     
     @property
@@ -199,7 +203,7 @@ class SnakeEnv(BaseSnakeEnv):
         elif done:
             reward = -10
         else:
-            reward = 1 if new_distance <= self._last_distance else -1
+            reward = 0.2 if new_distance <= self._last_distance else -0.3
             
         self._last_distance = new_distance
         return reward

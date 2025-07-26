@@ -3,13 +3,13 @@
 # Model Configuration
 model:
   name: "PPO"  # PPO, DQN, A2C
-  save_name: ""
+  save_name: "1"
   load_model: false
   use_policy_kwargs: false
 
 # Environment Configuration  
 environment:
-  game_size: 15
+  game_size: 16
   fast_game: true
   use_frame_stack: false
   n_stack: 4
@@ -17,8 +17,8 @@ environment:
 
 # Training Configuration
 training:
-  multiplicator: 5.0
-  verbose: 0
+  total_timesteps: 10_000
+  verbose: 1
   progress_bar: false
 
 # Callbacks Configuration

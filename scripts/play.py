@@ -18,8 +18,8 @@ def main():
         description="Watch a trained reinforcement learning model play Snake."
     )
     parser.add_argument(
-        "-m", "--model", type=str, default="PPO__snake",
-        help="Name of the trained model to watch."
+        "-m", "--model", type=str, default="PPO_1_snake",
+        help="Name of then trained model to watch."
     )
     parser.add_argument(
         "-g", "--game_size", type=int, default=15,

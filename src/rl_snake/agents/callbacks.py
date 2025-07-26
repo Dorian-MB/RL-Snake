@@ -37,7 +37,6 @@ class SnakeProgressCallback(BaseCallback):
         
         # Set custom bar style for smoother appearance
         if hasattr(self.pbar, 'bar_style'):
-            # Use block characters for smooth gradient
             self.pbar.bar_style = '█▉▊▋▌▍▎▏ '
     
     def _get_progress_color(self, avg_score):

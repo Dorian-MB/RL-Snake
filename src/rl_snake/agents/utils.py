@@ -1,9 +1,9 @@
 """Utility functions for agent management and operations."""
 
-from ..environment.utils import ModelLoader, ModelRenderer
+from ..environment.utils import ModelLoader, ModelRenderer, get_env
 
 # Re-export for backward compatibility
-__all__ = ["ModelLoader", "ModelRenderer"]
+__all__ = ["ModelLoader", "ModelRenderer", "get_env"]
 
 import logging
 
@@ -12,7 +12,7 @@ class Logger:
     Il enregistre les messages dans la console et dans un fichier.
     Les niveaux de log, handeler et formater sont configurables.
     """
-    def __init__(self, name="eco2_normandy", log_file="app.log"):
+    def __init__(self, name="snake_logger", log_file="app.log"):
         self.name = name
         self.log_file = log_file
         self._logger = self.get_logger()

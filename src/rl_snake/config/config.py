@@ -29,9 +29,10 @@ class EnvironmentConfig:
 @dataclass
 class TrainingConfig:
     """Training-related configuration."""
-    multiplicator: float = 5.0
+    multiplicator: float = 1.0
     verbose: int = 1
     progress_bar: bool = True
+    total_timesteps: int = 10_000  
 
 
 @dataclass
@@ -148,9 +149,11 @@ class Config:
         if hasattr(args, 'n_envs') and args.n_envs != 5:
             self.environment.n_envs = args.n_envs
             
-        if hasattr(args, 'multiplicator') and args.multiplicator != 5:
+        if hasattr(args, 'total_timesteps') and args.total_timesteps != 10_000:
+            self.training.total_timesteps = args.total_timesteps
+        if hasattr(args, 'multiplicator') and args.multiplicator != 1:
             self.training.multiplicator = args.multiplicator
-        if hasattr(args, 'verbose') and args.verbose != 2:
+        if hasattr(args, 'verbose') and args.verbose != 1:
             self.training.verbose = args.verbose
         if hasattr(args, 'progress_bar') and args.progress_bar:
             self.training.progress_bar = True
@@ -234,11 +237,15 @@ def create_argument_parser() -> argparse.ArgumentParser:
         help="Whether to show default SB3 progress bar during training."
     )
     parser.add_argument(
-        "-v", "--verbose", type=int, default=2, 
+        "-v", "--verbose", type=int, default=1, 
         help="Verbosity level for training output."
     )
     parser.add_argument(
-        "-x", "--multiplicator", type=float, default=5, 
+        "-t", "--total-timesteps", type=int, default=10_000,
+        help="Total number of timesteps for training."
+    )
+    parser.add_argument(
+        "-x", "--multiplicator", type=float, default=1, 
         help="Multiplicator for total timesteps."
     )
     
