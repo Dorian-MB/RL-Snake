@@ -11,8 +11,11 @@ import numpy as np
 import time
 
 
-def get_env(n_envs: int = 5, use_frame_stack: bool = False, n_stack: int = 4, 
-           game_size: int = 30, fast_game: bool = True):
+def get_env(n_envs: int = 5, 
+            use_frame_stack: bool = False, 
+            n_stack: int = 4, 
+            game_size: int = 30, 
+            fast_game: bool = True):
     """
     Create a vectorized environment for training.
     

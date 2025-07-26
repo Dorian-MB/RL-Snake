@@ -37,7 +37,7 @@ class ModelTrainer:
         Initialize the model trainer.
         
         Args:
-            model_name: Name/type of the model (PPO, DQN, A2C)
+            model_name: Name/type of the model (PPO, DQN, A2C), or model path to load (default in `saved/` directory).
             load_model: Whether to load existing model
             fast_game: Whether to use fast game implementation
             policy_kwargs: Custom policy arguments
@@ -139,7 +139,8 @@ class ModelTrainer:
             use_frame_stack=self.use_frame_stack, 
             game_size=self.game_size, 
             n_stack=self.n_stack, 
-            n_envs=self.n_envs
+            n_envs=self.n_envs,
+            fast_game=self.fast_game
         )
 
         total_timesteps = int(100_000 * multiplicator)

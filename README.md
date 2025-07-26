@@ -1,6 +1,6 @@
 # RL-Snake
 
-A modern implementation of reinforcement learning models playing the Snake game using Stable Baselines3 and Pygame.
+Implementation of reinforcement learning models playing the Snake game using Stable Baselines3 and Pygame.
 
 ## Features
 
@@ -97,9 +97,10 @@ python scripts/evaluate.py -m PPO_snake -e 100
 - **FastSnakeGame**: Lightweight numpy-only implementation for fast training
 
 ### RL Environment
-- **SnakeEnv**: Gymnasium-compatible environment
-- Custom feature extraction (neighbors, distance to food, angle)
-- Configurable reward system
+- **BaseSnakeEnv**: Base Gymnasium-compatible environment, for snake game.
+- **SnakeEnv**: Simple snake env
+    - Custom feature extraction (neighbors, distance to food, angle)
+    - Custom configurable reward system
 
 ### Agents
 - **ModelTrainer**: Handles model creation and training
