@@ -30,18 +30,18 @@ class EnvironmentConfig:
 class TrainingConfig:
     """Training-related configuration."""
     multiplicator: float = 5.0
-    verbose: int = 2
+    verbose: int = 1
     progress_bar: bool = True
 
 
 @dataclass
 class CallbacksConfig:
     """Callbacks-related configuration."""
-    enabled: bool = True
-    use_progress: bool = True
+    enabled: bool = False
+    use_progress: bool = False
     use_curriculum: bool = False
     use_metrics: bool = False
-    use_save: bool = True
+    use_save: bool = False
     curriculum_start: int = 10
     curriculum_end: int = 20
     save_freq: int = 50_000

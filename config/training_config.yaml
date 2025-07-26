@@ -18,19 +18,14 @@ environment:
 # Training Configuration
 training:
   multiplicator: 5.0
-  verbose: 2
-  progress_bar: true
+  verbose: 0
+  progress_bar: false
 
 # Callbacks Configuration
 callbacks:
   enabled: true
   use_progress: true # custom progress bar
-  use_curriculum: false
-  use_metrics: false
-  use_save: true
-  curriculum_start: 10
-  curriculum_end: 20
-  save_freq: 50000
+
 
 # Logging Configuration
 logging:

@@ -263,10 +263,10 @@ class SnakeSaveCallback(BaseCallback):
 
 def create_snake_callbacks(
     callbacks:list=[],
-    use_progress:bool=True,
-    use_curriculum:bool=True,
-    use_metrics:bool=True,
-    use_save:bool=True,
+    use_progress:bool=False,
+    use_curriculum:bool=False,
+    use_metrics:bool=False,
+    use_save:bool=False,
     curriculum_start:int=10,
     curriculum_end:int=20,
     save_freq:int=50_000
