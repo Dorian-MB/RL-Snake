@@ -1,0 +1,33 @@
+# Configuration for RL Snake Training
+
+# Model Configuration
+model:
+  name: "PPO"  # PPO, DQN, A2C
+  save_name: ""
+  load_model: false
+  use_policy_kwargs: false
+
+# Environment Configuration  
+environment:
+  game_size: 15
+  fast_game: true
+  use_frame_stack: false
+  n_stack: 4
+  n_envs: 5
+
+# Training Configuration
+training:
+  multiplicator: 5.0
+  verbose: 0
+  progress_bar: false
+
+# Callbacks Configuration
+callbacks:
+  enabled: true
+  use_progress: true # custom progress bar
+
+
+# Logging Configuration
+logging:
+  log_dir: "logs"
+  model_dir: "models"

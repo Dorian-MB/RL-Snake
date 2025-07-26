@@ -1,5 +1,8 @@
+"""Game constants and configuration for the Snake game."""
+
 from pygame.constants import K_UP, K_DOWN, K_RIGHT, K_LEFT
 
+# Global constants
 FONT_SIZE = 36
 
 DIS_X = 800
@@ -22,30 +25,47 @@ RADIUS = SNAKE_SIZE//2
 
 SCORE_COO = (DIS_X//2-X, Y//2)
 N = WIDTH//SNAKE_SIZE
+
+# Colors
 BLUE = (89, 152, 255)
 BLACK = (0, 0, 0)
 GRAY = (100, 100, 100)
 WHITE = (245, 245, 245)
 
+# Movement
 STEP = SNAKE_SIZE 
 DIRECTION = {
-    K_UP : (0, -STEP),
-    K_DOWN : (0, STEP),
-    K_RIGHT : (STEP, 0),
-    K_LEFT : (-STEP, 0)
+    K_UP: (0, -STEP),
+    K_DOWN: (0, STEP),
+    K_RIGHT: (STEP, 0),
+    K_LEFT: (-STEP, 0)
 }
 
 
 class GameConstants:
+    """Dynamic game constants that adapt to different grid sizes."""
+    
     def __init__(self, N: int = 30):
-        for key, value in self.get_game_constants(N).items():
+        """
+        Initialize game constants for an N×N grid.
+        
+        Args:
+            N: Grid size (number of cells per side)
+        """
+        for key, value in self._get_game_constants(N).items():
             setattr(self, key, value)
     
-    def get_game_constants(self, N: int):
+    def _get_game_constants(self, N: int) -> dict:
         """
-        Retourne toutes les constantes du jeu pour une grille N×N.
+        Calculate all game constants for an N×N grid.
+        
+        Args:
+            N: Grid size
+            
+        Returns:
+            Dictionary containing all game constants
         """
-        # paramètres modifiables
+        # Configurable parameters
         SNAKE_SIZE = 20
         X_MARGIN = 3*N + 3*SNAKE_SIZE
         Y_MARGIN = 2*N + 2*SNAKE_SIZE
@@ -53,7 +73,7 @@ class GameConstants:
         FONT_SIZE = 36
         SNAKE_SPEED = 5
 
-        # dimensions calculées
+        # Calculated dimensions
         WIDTH = N * SNAKE_SIZE
         HEIGHT = N * SNAKE_SIZE
         DIS_X = WIDTH + 2 * X_MARGIN
@@ -61,7 +81,7 @@ class GameConstants:
         DISPLAY_RES = (DIS_X, DIS_Y)
         SCORE_COO = (DIS_X//2-X_MARGIN, Y_MARGIN//2)
 
-        # zones de dessin
+        # Drawing areas
         GAME_SIZE = (X_MARGIN, Y_MARGIN, WIDTH, HEIGHT)
         BORDER_SIZE = (
             X_MARGIN - THICKNESS,
@@ -72,7 +92,7 @@ class GameConstants:
         INIT_SNAKE_COO = (DIS_X / 2, DIS_Y / 2, SNAKE_SIZE, SNAKE_SIZE)
         RADIUS = SNAKE_SIZE // 2
 
-        # mouvements et directions
+        # Movement and directions
         STEP = SNAKE_SIZE
         DIRECTION = {
             K_UP: (0, -STEP),
