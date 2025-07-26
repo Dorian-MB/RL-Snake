@@ -44,6 +44,16 @@ class BaseSnakeEnv(gym.Env):
 
         self.snake_game = self.SnakeGameHandler(self.game_size)
     
+    def set_game_size(self, new_size):
+        """
+        Set a new game size.
+        
+        Args:
+            new_size: New size for the game grid (NxN)
+        """
+        self.game_size = new_size
+        self.snake_game.set_game_size(new_size)
+    
     @property
     def food_position(self):
         """Get the position of the food."""
@@ -203,7 +213,7 @@ class SnakeEnv(BaseSnakeEnv):
         elif done:
             reward = -10
         else:
-            reward = 0.2 if new_distance <= self._last_distance else -0.3
+            reward = 0.5 if new_distance <= self._last_distance else -0.6
             
         self._last_distance = new_distance
         return reward

@@ -17,7 +17,7 @@ environment:
 
 # Training Configuration
 training:
-  total_timesteps: 10_000
+  total_timesteps: 100_000
   verbose: 1
   progress_bar: false
 
@@ -25,6 +25,7 @@ training:
 callbacks:
   enabled: true
   use_progress: true # custom progress bar
+  use_curriculum: true # dynamic curriculum learning
 
 
 # Logging Configuration

@@ -23,6 +23,16 @@ class FastSnakeGame:
         """
         self.game_size = game_size
         self.reset()
+    
+    def set_game_size(self, new_size):
+        """
+        Set a new game size.
+        
+        Args:
+            new_size: New size for the game grid (NxN)
+        """
+        self.game_size = new_size
+        self.reset()
 
     def reset(self):
         """Reset the game to initial state."""

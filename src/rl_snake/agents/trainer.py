@@ -9,7 +9,6 @@ from tqdm.auto import tqdm
 
 from .utils import get_env, Logger, ModelLoader
 from .feature_extractor import LinearQNet
-from .callbacks import create_snake_callbacks
 from ..config.config import Config, create_argument_parser, load_config, create_callbacks_from_config
 
 from pathlib import Path
@@ -27,13 +26,14 @@ class ModelTrainer:
     def __init__(self, model_name: str, 
                  load_model: bool = False,
                  fast_game: bool = True,
-                 callback_list: list = None,
+                 callback_list: list = [],
                  policy_kwargs=None, 
                  game_size: int = 30, 
                  n_envs: int = 5, 
                  n_stack: int = 4, 
                  use_frame_stack: bool = False,
                  progress_bar: bool = True,
+                 config=None,
                  verbose: int = 0):
         """
         Initialize the model trainer.
@@ -59,7 +59,8 @@ class ModelTrainer:
         self.load_model = load_model
         self.progress_bar = progress_bar
         self.verbose = verbose
-        self.callback_list = callback_list or create_snake_callbacks()
+        self.callback_list = callback_list 
+        self.config = config 
         self.logger = Logger()
 
         # Create training environment
@@ -93,7 +94,6 @@ class ModelTrainer:
         """
         # Create callbacks from configuration
         callback_list = create_callbacks_from_config(config.callbacks)
-        
         return cls(
             model_name=config.model.name,
             load_model=config.model.load_model,
@@ -105,6 +105,7 @@ class ModelTrainer:
             n_stack=config.environment.n_stack,
             use_frame_stack=config.environment.use_frame_stack,
             progress_bar=config.training.progress_bar,
+            config=config,
             verbose=config.training.verbose
         )
     
@@ -186,6 +187,9 @@ class ModelTrainer:
         eval_interval = 10_000
         num_eval_episodes = 5
 
+        if hasattr(self, 'config') and self.verbose >= 1:
+            self.logger.info(f"{Fore.CYAN}{self.config}{Fore.RESET}")
+
         self.logger.info(f"{Fore.CYAN}Starting training with {total_timesteps:,} timesteps{Fore.RESET}")
         
         # Training loop with periodic evaluation
@@ -193,7 +197,7 @@ class ModelTrainer:
         for step in range(0, total_timesteps, eval_interval):
             self.logger.info(f"{Fore.YELLOW}Training step {step//eval_interval + 1}/{total_timesteps//eval_interval}{Fore.RESET}")
             self.model.learn(total_timesteps=eval_interval, 
-                             reset_num_timesteps=False,
+                             reset_num_timesteps=True,
                              log_interval=self.log_interval if self.verbose > 1 else None, 
                              progress_bar=self.progress_bar,
                              callback=self.callback_list
@@ -228,7 +232,7 @@ class ModelTrainer:
             total_rewards = 0
             
             # Limit steps to prevent infinite loops
-            for _ in range(1000):
+            for _ in range(100):
                 # Get action from model
                 action, _states = self.model.predict(obs, deterministic=True)
                 
@@ -251,7 +255,7 @@ class ModelTrainer:
                 
             all_rewards.append(total_rewards)
         
-        average_reward = sum(all_rewards) / num_episodes
+        average_reward = np.sum(all_rewards, axis=1) / num_episodes
         return average_reward
 
     def save(self, name=""):

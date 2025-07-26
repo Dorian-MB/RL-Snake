@@ -139,6 +139,17 @@ class SnakeGame:
         self.is_render_mode = False
         self.raw_obs = self.get_raw_observation()
 
+    def set_game_size(self, new_size):
+        """
+        Set a new game size.
+        
+        Args:
+            new_size: New size for the game grid (NxN)
+        """
+        if new_size < 5 or new_size > 100:
+            raise ValueError("Game size must be between 5 and 100.")
+        self.__init__(new_size)
+
     @property
     def snake(self):
         """Get snake coordinates."""

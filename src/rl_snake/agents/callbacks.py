@@ -5,6 +5,7 @@ import numpy as np
 from tqdm.auto import tqdm
 from collections import deque
 import time
+import random
 
 class SnakeProgressCallback(BaseCallback):
     """Enhanced progress bar with Snake-specific metrics and SB3 style."""
@@ -132,42 +133,32 @@ class SnakeProgressCallback(BaseCallback):
 
 
 class SnakeCurriculumCallback(BaseCallback):
-    """Curriculum learning for Snake game difficulty."""
+    """Random curriculum learning for Snake game difficulty."""
     
-    def __init__(self, start_size=10, end_size=20, verbose=1):
+    def __init__(self, min_size=10, max_size=50, update_freq=100, verbose=0):
         super().__init__(verbose)
-        self.start_size = start_size
-        self.end_size = end_size
-        self.current_size = start_size
-        
-        # Define curriculum steps
-        self.curriculum_steps = [
-            (10_000, 12),   # After 10k steps, increase to 12x12
-            (30_000, 15),   # After 30k steps, increase to 15x15
-            (60_000, 18),   # After 60k steps, increase to 18x18
-            (90_000, 20),   # After 90k steps, increase to 20x20
-        ]
+        self.min_size = min_size
+        self.max_size = max_size
+        self.update_freq = update_freq
+        self.current_size = min_size
+        self.last_update = 0
         
     def _on_training_start(self) -> None:
         """Set initial difficulty."""
-        if self.verbose:
-            print(f"🎮 Starting curriculum: {self.start_size}x{self.start_size} grid")
-        self._update_game_size(self.start_size)
+        self.current_size = random.randint(self.min_size, self.max_size)
+        self._update_game_size(self.current_size)
         
     def _on_step(self) -> bool:
-        """Check for curriculum progression."""
-        for timestep, new_size in self.curriculum_steps:
-            if (self.num_timesteps == timestep and 
-                new_size > self.current_size and 
-                new_size <= self.end_size):
-                
-                if self.verbose:
-                    print(f"\n🚀 Curriculum step: Increasing to {new_size}x{new_size} grid")
-                    print(f"   Timestep: {self.num_timesteps:,}")
-                
+        """Randomly change grid size every update_freq steps."""
+        if self.num_timesteps - self.last_update >= self.update_freq:
+            # Generate new random size
+            new_size = random.randint(self.min_size, self.max_size)
+            
+            if new_size != self.current_size:
                 self._update_game_size(new_size)
                 self.current_size = new_size
-                break
+            
+            self.last_update = self.num_timesteps
                 
         return True
     
@@ -177,14 +168,8 @@ class SnakeCurriculumCallback(BaseCallback):
             # For vectorized environments
             if hasattr(self.training_env, 'env_method'):
                 self.training_env.env_method('set_game_size', new_size)
-            elif hasattr(self.training_env, 'set_game_size'):
-                self.training_env.set_game_size(new_size)
-            else:
-                if self.verbose:
-                    print("⚠️  Environment doesn't support dynamic game size")
         except Exception as e:
-            if self.verbose:
-                print(f"⚠️  Could not update game size: {e}")
+            raise e
 
 
 class SnakeMetricsCallback(BaseCallback):
@@ -291,12 +276,9 @@ def create_snake_callbacks(
     if use_progress:
         callbacks.append(SnakeProgressCallback())
         
-    # if use_curriculum:
-    #     callbacks.append(SnakeCurriculumCallback(
-    #         start_size=curriculum_start,
-    #         end_size=curriculum_end
-    #     ))
-        
+    if use_curriculum:
+        callbacks.append(SnakeCurriculumCallback())
+
     # if use_metrics:
     #     callbacks.append(SnakeMetricsCallback())
         

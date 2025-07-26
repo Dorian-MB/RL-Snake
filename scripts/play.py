@@ -22,7 +22,7 @@ def main():
         help="Name of then trained model to watch."
     )
     parser.add_argument(
-        "-g", "--game_size", type=int, default=15,
+        "-g", "--game_size", type=int, default=16,
         help="Size of the game grid (N x N)."
     )
     parser.add_argument(
@@ -58,11 +58,10 @@ def main():
     except FileNotFoundError as e:
         print(f"Error: {e}")
         print("Make sure the model file exists in the models/ directory.")
-        sys.exit(1)
+        raise e
     except Exception as e:
         print(f"An error occurred: {e}")
-        sys.exit(1)
-
+        raise e
 
 if __name__ == "__main__":
     main()
