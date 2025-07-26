@@ -1,5 +1,6 @@
 """Model training utilities and trainer class for RL agents."""
 
+import numpy as np
 from stable_baselines3 import PPO, DQN, A2C
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecFrameStack
@@ -155,7 +156,7 @@ class ModelTrainer:
             print(f"{Fore.YELLOW}Training step {step//eval_interval + 1}/{total_timesteps//eval_interval}{Fore.RESET}")
             
             self.model.learn(total_timesteps=eval_interval)
-            avg_reward = evaluate_model(self.model, eval_env, num_episodes=num_eval_episodes)
+            avg_reward = np.round(evaluate_model(self.model, eval_env, num_episodes=num_eval_episodes))
             
             print(f"{Fore.GREEN}Evaluation average reward: {avg_reward:.2f}{Fore.RESET}")
             

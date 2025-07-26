@@ -1,6 +1,10 @@
 # Old version
 .old/
 
+# Test files - tous les fichiers commençant par "test" partout dans le projet
+src/**/test*.*
+notebooks/**/test*.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -147,16 +151,6 @@ tensorboard_logs/
 checkpoints/
 *.pkl
 *.pth
-
-# Old structure (to be removed)
-save_logs/
-model/
-notebook/
-test*.py
-
-
-
-
 
 
 

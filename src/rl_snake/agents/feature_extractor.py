@@ -1,5 +1,6 @@
 """Feature extractors and model evaluation utilities for RL agents."""
 
+import numpy as np
 import torch
 import torch.nn as nn
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
@@ -103,5 +104,5 @@ def evaluate_model(model, eval_env, num_episodes=10):
             
         all_rewards.append(total_rewards)
     
-    average_reward = sum(all_rewards) / num_episodes
+    average_reward = np.sum(all_rewards) / num_episodes
     return average_reward
