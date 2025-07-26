@@ -62,6 +62,12 @@ class Config:
     training: TrainingConfig = field(default_factory=TrainingConfig)
     callbacks: CallbacksConfig = field(default_factory=CallbacksConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
+    
+    def _resolve_progress_bar(self):
+        if not self.callbacks.enabled:
+            return
+        if self.training.progress_bar and self.callbacks.use_progress:
+            self.callbacks.use_progress = False
 
     @classmethod
     def from_yaml(cls, config_path: str) -> 'Config':
@@ -152,7 +158,7 @@ class Config:
         # Callbacks overrides
         if hasattr(args, 'no_callbacks') and args.no_callbacks:
             self.callbacks.enabled = False
-        if hasattr(args, 'no_progress_callback') and args.no_progress_callback and not args.progress_bar: # default progress bar overrides custom one
+        if hasattr(args, 'no_progress_callback') and args.no_progress_callback :  # default progress bar overrides custom one
             self.callbacks.use_progress = False
         if hasattr(args, 'enable_curriculum') and args.enable_curriculum:
             self.callbacks.use_curriculum = True
@@ -295,6 +301,7 @@ def load_config(config_path: Optional[str] = None, args: Optional[argparse.Names
     if args:
         config = config.merge_with_args(args)
     
+    config._resolve_progress_bar()  # Ensure progress bar is resolved correctly
     return config
 
 

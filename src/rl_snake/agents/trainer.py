@@ -195,7 +195,6 @@ class ModelTrainer:
         start_time = time.perf_counter()
         for step in range(0, total_timesteps, eval_interval):
             self.logger.debug(f"{Fore.YELLOW}Training step {step//eval_interval + 1}/{total_timesteps//eval_interval}{Fore.RESET}")
-            
             self.model.learn(total_timesteps=eval_interval, 
                              reset_num_timesteps=False,
                              log_interval=self.log_interval if self.verbose > 1 else None, 
