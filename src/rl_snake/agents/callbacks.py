@@ -2,41 +2,133 @@
 
 from stable_baselines3.common.callbacks import BaseCallback
 import numpy as np
-from tqdm import tqdm
-
+from tqdm.auto import tqdm
+from collections import deque
+import time
 
 class SnakeProgressCallback(BaseCallback):
-    """Progress bar with Snake-specific metrics."""
+    """Enhanced progress bar with Snake-specific metrics and SB3 style."""
     
-    def __init__(self, verbose=0):
+    def __init__(self, verbose=0, update_freq=100):
         super().__init__(verbose)
         self.pbar = None
+        self.update_freq = update_freq
+        self.start_time = None
+        self.last_update = 0
         
     def _on_training_start(self) -> None:
-        """Initialize progress bar."""
+        """Initialize progress bar with SB3-style formatting."""
+        import time
+        self.start_time = time.perf_counter()
         total_timesteps = self.model._total_timesteps
-        self.pbar = tqdm(total=total_timesteps, desc="🐍 Training Snake RL")
+        
+        # Create progress bar with SB3-style formatting and colors
+        self.pbar = tqdm(
+            total=total_timesteps,
+            desc="🐍 Snake RL",
+            unit="step",
+            unit_scale=True,
+            dynamic_ncols=True,
+            ascii=False,  # Enable Unicode characters for smooth bars
+            colour='#00ff41',  # Matrix green color
+            bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
+            ncols=120,  # Width for better display
+        )
+        
+        # Set custom bar style for smoother appearance
+        if hasattr(self.pbar, 'bar_style'):
+            # Use block characters for smooth gradient
+            self.pbar.bar_style = '█▉▊▋▌▍▎▏ '
+    
+    def _get_progress_color(self, avg_score):
+        """Get color based on performance."""
+        if avg_score < 5:
+            return '#ff4444'  # Red for poor performance
+        elif avg_score < 20:
+            return '#ffaa00'  # Orange for medium performance  
+        elif avg_score < 50:
+            return '#00ff41'  # Green for good performance
+        else:
+            return '#00aaff'  # Blue for excellent performance
+        
+    def _get_postfix_dict(self, ep_info_buffer=None):
+        """Generate postfix dictionary for progress bar."""
+        postfix_dict = {}
+        # Calculate FPS and time metrics
+        elapsed_time = time.perf_counter() - self.start_time
+        fps = self.num_timesteps / elapsed_time if elapsed_time > 0 else 0
+        
+        if ep_info_buffer and len(ep_info_buffer) > 0:
+            # Use last 10-50 episodes for stable metrics
+            recent_episodes = list(deque(ep_info_buffer, maxlen=min(20, len(ep_info_buffer))))
+            
+            if recent_episodes:
+                scores = [ep['r'] for ep in recent_episodes]
+                lengths = [ep.get('l', 0) for ep in recent_episodes]
+                ep_times = [ep.get('t', 0) for ep in recent_episodes]
+                
+                # Calculate statistics
+                avg_score = np.mean(scores)
+                max_score = np.max(scores)
+                avg_length = np.mean(lengths)
+                avg_ep_time = np.mean(ep_times)
+                
+                # Create postfix
+                postfix_dict.update({
+                    'score': f'{avg_score:.1f}',
+                    'max': f'{max_score:.0f}',
+                    'steps': f'{avg_length:.0f}',
+                    'ep_time': f'{avg_ep_time:.1f}s',
+                    'fps': f'{fps:.0f}'
+                })
+            
+            if not postfix_dict:
+                postfix_dict['fps'] = f'{fps:.0f}'
+                
+        return postfix_dict
         
     def _on_step(self) -> bool:
-        """Update progress bar."""
-        if self.pbar:
-            self.pbar.update(1)
+        """Update progress bar with enhanced metrics."""
+        if self.pbar and (self.num_timesteps - self.last_update >= self.update_freq or 
+                         self.num_timesteps == self.model._total_timesteps):
             
-            # Update every 1000 steps
-            if self.num_timesteps % 1000 == 0:
-                ep_info_buffer = getattr(self.model, 'ep_info_buffer', None)
-                if ep_info_buffer and len(ep_info_buffer) > 0:
-                    recent_rewards = [ep['r'] for ep in ep_info_buffer[-10:]]
-                    avg_reward = np.mean(recent_rewards)
-                    max_length = max([ep.get('l', 0) for ep in ep_info_buffer[-10:]], default=0)
-                    self.pbar.set_description(
-                        f"🐍 Snake RL - Score: {avg_reward:.1f} | Max Length: {max_length}"
-                    )
+            # Update progress
+            steps_since_last = self.num_timesteps - self.last_update
+            self.pbar.update(steps_since_last)
+            self.last_update = self.num_timesteps
+            
+            # Calculate FPS and time metrics
+            elapsed_time = time.time() - self.start_time
+            fps = self.num_timesteps / elapsed_time if elapsed_time > 0 else 0
+            
+            # Get episode statistics
+            ep_info_buffer = getattr(self.model, 'ep_info_buffer', None)
+            postfix_dict = self._get_postfix_dict(ep_info_buffer)
+            
+            # Update color based on performance
+            if ep_info_buffer and len(ep_info_buffer) > 0:
+                recent_episodes = list(deque(ep_info_buffer, maxlen=20))
+                if recent_episodes:
+                    avg_score = np.mean([ep['r'] for ep in recent_episodes])
+                    new_color = self._get_progress_color(avg_score)
+                    if hasattr(self.pbar, 'colour'):
+                        self.pbar.colour = new_color
+            
+            self.pbar.set_postfix(postfix_dict)
+            
         return True
         
     def _on_training_end(self) -> None:
-        """Close progress bar."""
+        """Close progress bar and show final summary."""
         if self.pbar:
+            # Final update to 100%
+            remaining_steps = self.model._total_timesteps - self.pbar.n
+            if remaining_steps > 0:
+                self.pbar.update(remaining_steps)
+                
+            ep_info_buffer = getattr(self.model, 'ep_info_buffer', None)
+            postfix_dict = self._get_postfix_dict(ep_info_buffer)
+            self.pbar.set_postfix(postfix_dict)
             self.pbar.close()
 
 
@@ -170,18 +262,20 @@ class SnakeSaveCallback(BaseCallback):
 
 
 def create_snake_callbacks(
-    use_progress=True,
-    use_curriculum=True,
-    use_metrics=True,
-    use_save=True,
-    curriculum_start=10,
-    curriculum_end=20,
-    save_freq=50_000
+    callbacks:list=[],
+    use_progress:bool=True,
+    use_curriculum:bool=True,
+    use_metrics:bool=True,
+    use_save:bool=True,
+    curriculum_start:int=10,
+    curriculum_end:int=20,
+    save_freq:int=50_000
 ):
     """
     Create a standard set of callbacks for Snake training.
     
     Args:
+        callbacks: List of additional custom callbacks to include
         use_progress: Whether to include progress bar
         use_curriculum: Whether to include curriculum learning
         use_metrics: Whether to include metrics logging
@@ -194,22 +288,21 @@ def create_snake_callbacks(
         List of configured callbacks
     """
     from stable_baselines3.common.callbacks import CallbackList
-    callbacks = []
     
     if use_progress:
         callbacks.append(SnakeProgressCallback())
         
-    if use_curriculum:
-        callbacks.append(SnakeCurriculumCallback(
-            start_size=curriculum_start,
-            end_size=curriculum_end
-        ))
+    # if use_curriculum:
+    #     callbacks.append(SnakeCurriculumCallback(
+    #         start_size=curriculum_start,
+    #         end_size=curriculum_end
+    #     ))
         
-    if use_metrics:
-        callbacks.append(SnakeMetricsCallback())
+    # if use_metrics:
+    #     callbacks.append(SnakeMetricsCallback())
         
-    if use_save:
-        callbacks.append(SnakeSaveCallback(save_freq=save_freq))
+    # if use_save:
+    #     callbacks.append(SnakeSaveCallback(save_freq=save_freq))
 
         
     callbacks = CallbackList(callbacks)  # Use CallbackList for better management

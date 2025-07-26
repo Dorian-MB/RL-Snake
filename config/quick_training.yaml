@@ -1,0 +1,33 @@
+# Quick training configuration for development/testing
+
+model:
+  name: "PPO"
+  save_name: "quick"
+  load_model: false
+  use_policy_kwargs: false
+
+environment:
+  game_size: 10
+  fast_game: true
+  use_frame_stack: false
+  n_stack: 4
+  n_envs: 2
+
+training:
+  multiplicator: 1.0  # Reduced for quick training
+  verbose: 1
+  progress_bar: true
+
+callbacks:
+  enabled: true
+  use_progress: true
+  use_curriculum: false
+  use_metrics: false
+  use_save: false  # No saving for quick tests
+  curriculum_start: 8
+  curriculum_end: 12
+  save_freq: 10000
+
+logging:
+  log_dir: "logs"
+  model_dir: "models"

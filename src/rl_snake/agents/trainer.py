@@ -10,11 +10,14 @@ from colorama import Fore
 
 from ..environment.utils import get_env
 from ..environment.snake_env import SnakeEnv
-from .feature_extractor import LinearQNet, evaluate_model
 from ..environment.utils import ModelLoader
+from .feature_extractor import LinearQNet
+from .callbacks import create_snake_callbacks
+from ..config.config import Config, create_argument_parser, load_config, create_callbacks_from_config
 
 from pathlib import Path
 import time
+import logging
 
 
 class ModelTrainer:
@@ -28,12 +31,14 @@ class ModelTrainer:
     def __init__(self, model_name: str, 
                  load_model: bool = False,
                  fast_game: bool = True,
+                 callback_list: list = None,
                  policy_kwargs=None, 
                  game_size: int = 30, 
                  n_envs: int = 5, 
                  n_stack: int = 4, 
                  use_frame_stack: bool = False,
-                 verbose: int = 2):
+                 progress_bar: bool = True,
+                 verbose: int = 0):
         """
         Initialize the model trainer.
         
@@ -55,8 +60,13 @@ class ModelTrainer:
         self.n_envs = n_envs
         self.n_stack = n_stack
         self.use_frame_stack = use_frame_stack
+        self.load_model = load_model
+        self.progress_bar = progress_bar
         self.verbose = verbose
-        
+        self.callback_list = callback_list or create_snake_callbacks()
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG if verbose > 0 else logging.INFO)  # Set logging level based on verbosity
+
         # Create training environment
         self.train_env = get_env(
             use_frame_stack=use_frame_stack, 
@@ -75,6 +85,34 @@ class ModelTrainer:
         else:
             self.model = self._get_model(model_name, policy_kwargs=policy_kwargs)
     
+    @classmethod
+    def from_config(cls, config: Config) -> 'ModelTrainer':
+        """
+        Create ModelTrainer from configuration object.
+        
+        Args:
+            config: Complete configuration object
+            
+        Returns:
+            Configured ModelTrainer instance
+        """
+        # Create callbacks from configuration
+        callback_list = create_callbacks_from_config(config.callbacks)
+        
+        return cls(
+            model_name=config.model.name,
+            load_model=config.model.load_model,
+            fast_game=config.environment.fast_game,
+            callback_list=callback_list,
+            policy_kwargs=dict(features_extractor_class=LinearQNet) if config.model.use_policy_kwargs else None,
+            game_size=config.environment.game_size,
+            n_envs=config.environment.n_envs,
+            n_stack=config.environment.n_stack,
+            use_frame_stack=config.environment.use_frame_stack,
+            progress_bar=config.training.progress_bar,
+            verbose=config.training.verbose
+        )
+    
     def _get_model(self, model_name, policy_kwargs=None):
         """
         Create and configure the RL model.
@@ -87,6 +125,7 @@ class ModelTrainer:
             Configured RL model
         """
         if model_name == "PPO":
+            self.log_interval = 1
             model = PPO(
                 "MlpPolicy", 
                 self.train_env,
@@ -96,6 +135,7 @@ class ModelTrainer:
                 n_steps=100
             )               
         elif model_name == "DQN":
+            self.log_interval = 4
             model = DQN(
                 "MlpPolicy", 
                 self.train_env, 
@@ -112,6 +152,7 @@ class ModelTrainer:
                 exploration_final_eps=0.05
             )
         elif model_name == "A2C":
+            self.log_interval = 100
             model = A2C(
                 "MlpPolicy",
                 self.train_env,
@@ -148,20 +189,74 @@ class ModelTrainer:
         eval_interval = 10_000
         num_eval_episodes = 5
 
-        print(f"{Fore.CYAN}Starting training with {total_timesteps:,} timesteps{Fore.RESET}")
+        self.logger.debug(f"{Fore.CYAN}Starting training with {total_timesteps:,} timesteps{Fore.RESET}")
         
         # Training loop with periodic evaluation
         start_time = time.perf_counter()
         for step in range(0, total_timesteps, eval_interval):
-            print(f"{Fore.YELLOW}Training step {step//eval_interval + 1}/{total_timesteps//eval_interval}{Fore.RESET}")
+            self.logger.debug(f"{Fore.YELLOW}Training step {step//eval_interval + 1}/{total_timesteps//eval_interval}{Fore.RESET}")
             
-            self.model.learn(total_timesteps=eval_interval)
-            avg_reward = np.round(evaluate_model(self.model, eval_env, num_episodes=num_eval_episodes))
+            self.model.learn(total_timesteps=eval_interval, 
+                             reset_num_timesteps=False,
+                             log_interval=self.log_interval if self.verbose > 1 else None, 
+                             progress_bar=self.progress_bar,
+                             callback=self.callback_list
+                            )
+            avg_reward = np.round(self.evaluate_model(eval_env, num_episodes=num_eval_episodes))
             
-            print(f"{Fore.GREEN}Evaluation average reward: {avg_reward:.2f}{Fore.RESET}")
+            self.logger.debug(f"{Fore.GREEN}Evaluation average reward: {avg_reward:.2f}{Fore.RESET}")
             
         elapsed_time = time.perf_counter() - start_time
-        print(f"{Fore.GREEN}===Training completed in {elapsed_time:.2f} seconds==={Fore.RESET}")
+        self.logger.debug(f"{Fore.GREEN}===Training completed in {elapsed_time:.2f} seconds==={Fore.RESET}")
+        
+    def evaluate_model(self, eval_env, num_episodes=10):
+        """
+        Evaluate model's performance.
+        
+        Args:
+            eval_env: Environment for evaluation
+            num_episodes: Number of episodes to evaluate
+            
+        Returns:
+            Average reward across episodes
+        """
+        all_rewards = []
+        
+        for episode in range(num_episodes):
+            obs = eval_env.reset()
+            # Handle different environment return formats
+            if isinstance(obs, tuple):
+                obs = obs[0]
+            
+            terminated = False
+            total_rewards = 0
+            
+            # Limit steps to prevent infinite loops
+            for _ in range(1000):
+                # Get action from model
+                action, _states = self.model.predict(obs, deterministic=True)
+                
+                # Take step in environment
+                step_result = eval_env.step(action)
+                
+                # Handle different return formats (gym vs gymnasium)
+                if len(step_result) == 5:  # Gymnasium format
+                    obs, reward, terminated, truncated, info = step_result
+                    terminated = terminated or truncated
+                else:  # Gym format
+                    obs, reward, terminated, info = step_result
+                    
+                total_rewards += reward
+                
+                # Check if episode is done
+                if (isinstance(terminated, bool) and terminated) or \
+                (hasattr(terminated, '__iter__') and all(terminated)):
+                    break
+                
+            all_rewards.append(total_rewards)
+        
+        average_reward = np.sum(all_rewards) / num_episodes
+        return average_reward
 
     def save(self, name=""):
         """
@@ -178,76 +273,27 @@ class ModelTrainer:
         save_path = model_dir / save_name
         
         self.model.save(save_path)
-        print(f"{Fore.GREEN}Model saved to: {save_path}{Fore.RESET}")
+        self.logger.debug(f"{Fore.GREEN}Model saved to: {save_path}{Fore.RESET}")
 
 
-if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(
-        description="Train a reinforcement learning model for the Snake game."
-    )
-    parser.add_argument(
-        "-s", "--save-name", type=str, default="", 
-        help="Save name for the model."
-    )
-    parser.add_argument(
-        "-l", "--load-model", action='store_true', 
-        help="Load an existing model instead of training a new one."
-    )
-    parser.add_argument(
-        "-m", "--model", type=str, default="PPO", 
-        help="Model type to train (PPO, DQN, A2C)."
-    )
-    parser.add_argument(
-        "-f", "--fast-game", action='store_true', 
-        help="Don't use the fast version of the Snake game."
-    )
-    parser.add_argument(
-        "-g", "--game_size", type=int, default=15, 
-        help="Size of the game grid (N x N)."
-    )
-    parser.add_argument(
-        "-n", "--n-envs", type=int, default=5, 
-        help="Number of parallel environments."
-    )
-    parser.add_argument(
-        "--n_stack", type=int, default=4, 
-        help="Number of frames to stack for frame stacking."
-    )
-    parser.add_argument(
-        "--use-frame-stack", action='store_true', 
-        help="Whether to use frame stacking."
-    )
-    parser.add_argument(
-        "-u", "--use-policy-kwargs", action='store_true', 
-        help="Whether to use custom policy kwargs for the model."
-    )
-    parser.add_argument(
-        "-v", "--verbose", type=int, default=1, 
-        help="Verbosity level for training output."
-    )
-    parser.add_argument(
-        "-x", "--multiplicator", type=float, default=5, 
-        help="Multiplicator for total timesteps."
-    )
-    
+def main():
+    """Main function to run the model trainer."""
+    # Parse command line arguments
+    parser = create_argument_parser()
     args = parser.parse_args()
-
-    trainer = ModelTrainer(
-        model_name=args.model,
-        game_size=args.game_size,
-        fast_game=not args.fast_game,
-        n_envs=args.n_envs,
-        n_stack=args.n_stack,
-        load_model=args.load_model,
-        use_frame_stack=args.use_frame_stack,
-        policy_kwargs=dict(features_extractor_class=LinearQNet) if args.use_policy_kwargs else None,
-        verbose=args.verbose
-    )
     
-    trainer.train(multiplicator=args.multiplicator)
-    trainer.save(name=args.save_name)
+    # Load configuration (file + command line override)
+    config = load_config(config_path=args.config, args=args)
+    
+    # Create trainer from configuration
+    trainer = ModelTrainer.from_config(config)
+    
+    # Train and save model
+    trainer.train(multiplicator=config.training.multiplicator)
+    trainer.save(name=config.model.save_name)
+    
+if __name__ == "__main__":
+    main()
 
 
 """
