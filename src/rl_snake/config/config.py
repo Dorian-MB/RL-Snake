@@ -33,6 +33,7 @@ class TrainingConfig:
     verbose: int = 1
     progress_bar: bool = True
     total_timesteps: int = 10_000  
+    eval_interval: int = 10_000  
 
 
 @dataclass
@@ -153,6 +154,8 @@ class Config:
             self.training.total_timesteps = args.total_timesteps
         if hasattr(args, 'multiplicator') and args.multiplicator != 1:
             self.training.multiplicator = args.multiplicator
+        if hasattr(args, 'eval_interval') and args.eval_interval != 10_000:
+            self.training.eval_interval = args.eval_interval
         if hasattr(args, 'verbose') and args.verbose != 1:
             self.training.verbose = args.verbose
         if hasattr(args, 'progress_bar') and args.progress_bar:
@@ -247,6 +250,10 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-x", "--multiplicator", type=float, default=1, 
         help="Multiplicator for total timesteps."
+    )
+    parser.add_argument(
+        "--eval-interval", type=int, default=10_000,
+        help="Interval for evaluation during training."
     )
     
     # Callbacks arguments

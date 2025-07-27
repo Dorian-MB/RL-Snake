@@ -41,6 +41,7 @@ class FastSnakeGame:
         self.food = None
         self._place_food()
         self.game_over = False
+        self.n_steps = 0
 
     def _place_food(self):
         """Place food at a random position not occupied by the snake."""
@@ -61,7 +62,8 @@ class FastSnakeGame:
             Tuple of (observation, reward, done, info)
         """
         if self.game_over:
-            return self.raw_obs, self.score, self.game_over, {}
+            return self.raw_obs, self.score, self.game_over, self._get_info()
+        self.n_steps += 1
 
         # Directions: 0-Up, 1-Left, 2-Down, 3-Right
         directions = [(-1, 0), (0, -1), (1, 0), (0, 1)]
@@ -76,7 +78,7 @@ class FastSnakeGame:
             new_head[0] < 0 or new_head[0] >= self.game_size or 
             new_head[1] < 0 or new_head[1] >= self.game_size):
             self.game_over = True
-            return self.raw_obs, self.score, self.game_over, {}
+            return self.raw_obs, self.score, self.game_over, self._get_info()
 
         self.snake.insert(0, new_head)
 
@@ -87,7 +89,18 @@ class FastSnakeGame:
         else:
             self.snake.pop()
 
-        return self.raw_obs, self.score, self.game_over, {}
+        return self.raw_obs, self.score, self.game_over, self._get_info()
+
+    def _get_info(self):
+        """Get additional game info."""
+        return {
+            "n_steps": self.n_steps,
+            "snake_length": len(self.snake),
+            "score": self.score,
+            "game_over": self.game_over,
+            "food_position": self.food,
+            "head_position": self.snake[0],
+        }
 
     @property
     def raw_obs(self):

@@ -53,6 +53,7 @@ class SnakeProgressCallback(BaseCallback):
         
     def _get_postfix_dict(self, ep_info_buffer=None):
         """Generate postfix dictionary for progress bar."""
+        # ep_info_buffer = getattr(self.model, 'ep_info_buffer', None)
         postfix_dict = {}
         # Calculate FPS and time metrics
         elapsed_time = time.perf_counter() - self.start_time
@@ -63,7 +64,7 @@ class SnakeProgressCallback(BaseCallback):
             recent_episodes = list(deque(ep_info_buffer, maxlen=min(20, len(ep_info_buffer))))
             
             if recent_episodes:
-                scores = [ep['r'] for ep in recent_episodes]
+                scores = [ep.get('r', 0) for ep in recent_episodes]
                 lengths = [ep.get('l', 0) for ep in recent_episodes]
                 ep_times = [ep.get('t', 0) for ep in recent_episodes]
                 
@@ -135,7 +136,7 @@ class SnakeProgressCallback(BaseCallback):
 class SnakeCurriculumCallback(BaseCallback):
     """Random curriculum learning for Snake game difficulty."""
     
-    def __init__(self, min_size=10, max_size=50, update_freq=100, verbose=0):
+    def __init__(self, min_size=10, max_size=30, update_freq=1_000, verbose=0):
         super().__init__(verbose)
         self.min_size = min_size
         self.max_size = max_size

@@ -99,7 +99,7 @@ class Food:
     @property
     def coordinates(self):
         """Get food coordinates."""
-        return self.x, self.y
+        return [self.x, self.y]
     
     def draw(self, display):
         """Draw the food on the display."""
@@ -126,6 +126,7 @@ class SnakeGame:
         Args:
             game_size: Size of the game grid (NxN)
         """
+        self.n_steps = 0
         self.game_size = game_size
         self.cte = GameConstants(game_size)
         self.border = pygame.Rect(*self.cte.GAME_SIZE)
@@ -138,6 +139,9 @@ class SnakeGame:
         self.done = False  # Game over from the agent
         self.is_render_mode = False
         self.raw_obs = self.get_raw_observation()
+    
+    def reset(self):
+        self.__init__(self.game_size)
 
     def set_game_size(self, new_size):
         """
@@ -146,19 +150,20 @@ class SnakeGame:
         Args:
             new_size: New size for the game grid (NxN)
         """
-        if new_size < 5 or new_size > 100:
-            raise ValueError("Game size must be between 5 and 100.")
+        if new_size < 5:
+            raise ValueError("Game size must be greater than 5.")
         self.__init__(new_size)
 
     @property
     def snake(self):
         """Get snake coordinates."""
-        return self._snake.coordinates
-    
+        #todo reverse coordinates to match env observation format. todo: serach why in 'get_raw_obs'
+        return [self._get_snake_coo(*coord)[::-1] for coord in self._snake.coordinates]
+
     @property
     def food(self):
         """Get food coordinates."""
-        return self._food.coordinates
+        return self._food.coordinates[::-1] # same
 
     def init_board(self, display):
         """Initialize the game board display."""
@@ -182,6 +187,10 @@ class SnakeGame:
     def render(self):
         """Render the game."""
         self.draw()
+
+    def console_render(self):
+        for line in self.raw_obs:
+            print(" ".join(str(int(cell)) for cell in line))
         
     def play(self):
         """Start the interactive game loop."""
@@ -231,8 +240,9 @@ class SnakeGame:
             Tuple of (observation, reward, done, info)
         """
         if self.done:
-            return self.raw_obs, self.score, self.done, {}
-
+            return self.raw_obs, self.score, self.done, self._get_info()
+        self.n_steps += 1
+        
         if action is not None:
             self._snake.current_direction = list(self.cte.DIRECTION.values())[action]
             self._snake.body[0][1] = self._snake.current_direction
@@ -240,9 +250,9 @@ class SnakeGame:
         border_collision = self._snake.check_border_collision(self.border)
         snake_collision = self._snake.check_collision()
         if not (snake_collision and border_collision):
-            self.done = True  
-            return self.raw_obs, self.score, self.done, {}
-        
+            self.done = True
+            return self.raw_obs, self.score, self.done, self._get_info()
+
         tail, tail_direction = self._snake.body[-1]
         tail_x, tail_y = tail.x, tail.y
         
@@ -265,7 +275,23 @@ class SnakeGame:
             self.done = False if snake_collision and border_collision else True
             if not self.done:
                 self.raw_obs = self.get_raw_observation()
-            return self.raw_obs, self.score, self.done, {}
+            return self.raw_obs, self.score, self.done, self._get_info()
+
+    def _get_info(self):
+        """Get additional game info."""
+        return {
+            "n_steps": self.n_steps,
+            "snake_length": len(self.snake),
+            "score": self.score,
+            "game_over": self.game_over,
+            "food_position": self.food,
+            "head_position": self.snake[0],
+        }
+
+    def _get_snake_coo(self, x, y):
+        """Get x, y coordinates within the game grid."""
+        x, y = (x-self.cte.X)//self.cte.SNAKE_SIZE, (y-self.cte.Y)//self.cte.SNAKE_SIZE
+        return x, y
 
     def get_raw_observation(self):
         """Get the current game state as a numpy array."""
@@ -273,7 +299,7 @@ class SnakeGame:
         clipped = lambda x: max(0, min(self.game_size-1, x))  # Ensure within bounds
         
         for cell, _ in self._snake.body:
-            x, y = (cell.x-self.cte.X)//self.cte.SNAKE_SIZE, (cell.y-self.cte.Y)//self.cte.SNAKE_SIZE
+            x, y = self._get_snake_coo(cell.x, cell.y)
             x, y = clipped(x), clipped(y)  # Ensure within bounds
             raw_obs[y, x] = 1
             
@@ -316,8 +342,16 @@ def test_speed():
         game.step(action)  # up/down
     return time() - start_time
     
+def main():
+    """Main function to run the game."""
+    import argparse
+    parser = argparse.ArgumentParser(description="Run the Snake game engine.")
+    parser.add_argument("--game_size", type=int, default=30, help="Size of the game grid (NxN).")
+    args = parser.parse_args()
+    
+    game = SnakeGame(game_size=args.game_size)
+    game.play()
 
 if __name__ == "__main__":
     # print("\ntest_speed: ", test_speed(), "\n")
-    game = SnakeGame()
-    game.play()
+    main()

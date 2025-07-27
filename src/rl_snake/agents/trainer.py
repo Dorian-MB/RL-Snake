@@ -162,7 +162,7 @@ class ModelTrainer:
             raise ValueError(f"Model {model_name} is not supported.")
         return model
 
-    def train(self, total_timesteps:int=10_000, multiplicator: float = 1):
+    def train(self, total_timesteps:int=10_000, multiplicator: float = 1, eval_interval: int = 10_000):
         """
         Train the model with periodic evaluation.
         
@@ -184,7 +184,6 @@ class ModelTrainer:
         )
 
         total_timesteps = int(total_timesteps * multiplicator)
-        eval_interval = 10_000
         num_eval_episodes = 5
 
         if hasattr(self, 'config') and self.verbose >= 1:
@@ -290,7 +289,8 @@ def main():
     
     # Train and save model
     trainer.train(total_timesteps=config.training.total_timesteps, 
-                  multiplicator=config.training.multiplicator)
+                  multiplicator=config.training.multiplicator,
+                  eval_interval=config.training.eval_interval)
     trainer.save(name=config.model.save_name)
     
 if __name__ == "__main__":

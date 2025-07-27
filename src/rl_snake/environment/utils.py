@@ -44,7 +44,7 @@ class ModelLoader:
     """Base class for loading trained models."""
     
     def __init__(self, name: str, use_frame_stack: bool = False, game_size: int = 30, 
-                 n_stack: int = 4, fast_game: bool = True):
+                 n_stack: int = 4, fast_game: bool = True, n_envs: int = 5):
         """
         Initialize model loader.
         
@@ -63,8 +63,9 @@ class ModelLoader:
                 f"Model file {path} does not exist. Please train the model first."
             )
         
-        self.n_stack = n_stack
+        self.n_stack = n_stack if use_frame_stack else 1
         self.use_frame_stack = use_frame_stack
+        self.n_envs = n_envs
         self.name = name
         self.game_size = game_size
         self.fast_game = fast_game
@@ -73,7 +74,9 @@ class ModelLoader:
             use_frame_stack=use_frame_stack, 
             game_size=game_size, 
             n_stack=n_stack, 
-            fast_game=fast_game
+            fast_game=fast_game,
+            n_envs=n_envs
+            
         )
 
         if "PPO" in name:
@@ -88,7 +91,7 @@ class ModelRenderer(ModelLoader):
     """Class for rendering trained models in action."""
     
     def __init__(self, name: str, use_frame_stack: bool = False, game_size: int = 30, 
-                 n_stack: int = 4, fast_game: bool = False):
+                 n_stack: int = 4, fast_game: bool = False, verbose: bool = True):
         """
         Initialize model renderer.
         
@@ -101,6 +104,7 @@ class ModelRenderer(ModelLoader):
         """
         super().__init__(name, use_frame_stack, game_size, n_stack, fast_game=fast_game)
         self.env = SnakeEnv(game_size=game_size, fast_game=fast_game)
+        self.verbose = verbose
 
     def render(self):
         """Render the model playing the game."""
@@ -109,6 +113,7 @@ class ModelRenderer(ModelLoader):
         self.env.render()
         stacked_obs = [np.zeros_like(obs)] * self.n_stack 
         step = 0
+        Total_reward = 0
         
         while not terminated:
             if self.use_frame_stack:
@@ -118,13 +123,21 @@ class ModelRenderer(ModelLoader):
                 obs = np.concatenate([obs] + stacked_obs).reshape((-1, 1)).flatten()
                 
             action, _info = self.model.predict(obs, deterministic=True)
-            print(f"Action taken: {action}")
-            obs, reward, terminated, truncated, _ = self.env.step(action)
+            obs, reward, terminated, *_ = self.env.step(action)
             step += 1
-            print(f"Reward received: {reward}")
-            print("Distance to food:", obs.take(-2))
-            print(f"Step: {step}")
+            Total_reward += reward
+            if self.verbose:
+                print("-"*20)
+                print(f"Action taken: {action}")
+                print(f"Reward received: {reward}")
+                print("Distance to food:", obs.take(5))
+                print(f"Step: {step}")
             self.env.render()
             time.sleep(0.1)
-            
+
+        if self.verbose:
+            print("\n"+"-"*20)
+            print("Game over!")
+            print(f"Total steps taken: {step}")
+            print(f"Total reward: {Total_reward}")
         self.env.close()
