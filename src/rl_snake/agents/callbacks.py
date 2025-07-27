@@ -21,11 +21,11 @@ class SnakeProgressCallback(BaseCallback):
         """Initialize progress bar with SB3-style formatting."""
         import time
         self.start_time = time.perf_counter()
-        total_timesteps = self.model._total_timesteps
+        self.total_timesteps = self.model._total_timesteps - self.model.num_timesteps
         
         # Create progress bar with SB3-style formatting and colors
         self.pbar = tqdm(
-            total=total_timesteps,
+            total=self.total_timesteps,
             desc="🐍 Snake RL",
             unit="step",
             unit_scale=True,
@@ -122,7 +122,7 @@ class SnakeProgressCallback(BaseCallback):
         """Close progress bar and show final summary."""
         if self.pbar:
             # Final update to 100%
-            remaining_steps = self.model._total_timesteps - self.pbar.n
+            remaining_steps = self.total_timesteps - self.pbar.n
             if remaining_steps > 0:
                 self.pbar.update(remaining_steps)
                 

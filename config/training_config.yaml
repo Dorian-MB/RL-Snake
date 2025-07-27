@@ -3,7 +3,7 @@
 # Model Configuration
 model:
   name: "PPO"  # PPO, DQN, A2C
-  save_name: "1"
+  save_name: "0"
   load_model: false
   use_policy_kwargs: false
 

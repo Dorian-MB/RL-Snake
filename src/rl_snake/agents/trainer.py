@@ -197,7 +197,7 @@ class ModelTrainer:
         for step in range(0, total_timesteps, eval_interval):
             self.logger.info(f"{Fore.YELLOW}Training step {step//eval_interval + 1}/{total_timesteps//eval_interval}{Fore.RESET}")
             self.model.learn(total_timesteps=eval_interval, 
-                             reset_num_timesteps=True,
+                             reset_num_timesteps=False,
                              log_interval=self.log_interval if self.verbose > 1 else None, 
                              progress_bar=self.progress_bar,
                              callback=self.callback_list

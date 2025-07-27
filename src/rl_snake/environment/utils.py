@@ -59,12 +59,9 @@ class ModelLoader:
         # Updated path to use models folder
         path = Path().cwd() / "models" / name
         if not path.exists():
-            # Fallback to old model folder for backward compatibility
-            path = Path().cwd() / "model" / name
-            if not path.exists():
-                raise FileNotFoundError(
-                    f"Model file {path} does not exist. Please train the model first."
-                )
+            raise FileNotFoundError(
+                f"Model file {path} does not exist. Please train the model first."
+            )
         
         self.n_stack = n_stack
         self.use_frame_stack = use_frame_stack
