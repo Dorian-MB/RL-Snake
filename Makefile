@@ -19,16 +19,16 @@ test-coverage:  ## Run tests with coverage
 	python -m pytest tests/ --cov=rl_snake --cov-report=html
 
 train:  ## Train a PPO model (default settings)
-	python scripts/train.py -m PPO -g 15 -x 5
+	python src/rl_snake/scripts/train.py -m PPO -g 16 
 
 train-dqn:  ## Train a DQN model
-	python scripts/train.py -m DQN -g 15 -x 5
+	python src/rl_snake/scripts/train.py -m DQN -g 15 
 
 play:  ## Play with the default trained model
-	python scripts/play.py -m PPO_snake
+	python src/rl_snake/scripts/play.py -m PPO_snake
 
 evaluate:  ## Evaluate the default trained model
-	python scripts/evaluate.py -m PPO_snake -e 50
+	python src/rl_snake/scripts/evaluate.py -m PPO_snake -e 50
 
 clean:  ## Clean up generated files
 	find . -type f -name "*.pyc" -delete

@@ -55,7 +55,8 @@ docs = [
 
 [project.scripts]
 rl-snake-train = "rl_snake.scripts.train:main"
-rl-snake-play = "rl_snake.scripts.play:main"
+rl-snake-play = "rl_snake.scripts.play_agents:main"
+rl-play-snake = "rl_snake.scripts.play_snake:main"
 rl-snake-evaluate = "rl_snake.scripts.evaluate:main"
 
 [project.urls]

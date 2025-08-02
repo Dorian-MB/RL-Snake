@@ -140,4 +140,5 @@ class ModelRenderer(ModelLoader):
             print("Game over!")
             print(f"Total steps taken: {step}")
             print(f"Total reward: {Total_reward}")
+            print(f"Final score: {self.env.snake_game.score}")
         self.env.close()

@@ -293,7 +293,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def load_config(config_path: Optional[str] = None, args: Optional[argparse.Namespace] = None) -> Config:
+def load_config(config_path: Optional[str] = "config/training_config.yaml", args: Optional[argparse.Namespace] = None) -> Config:
     """
     Load configuration from file and/or command line arguments.
     

@@ -76,7 +76,9 @@ class ModelTrainer:
                 name=model_name, 
                 use_frame_stack=use_frame_stack, 
                 game_size=game_size, 
-                n_stack=n_stack
+                n_stack=n_stack,
+                n_envs=n_envs,
+                fast_game=fast_game
             ).model
         else:
             self.model = self._get_model(model_name, policy_kwargs=policy_kwargs)
@@ -170,9 +172,9 @@ class ModelTrainer:
             total_timesteps: Total number of timesteps for training
             multiplicator: Multiplier for total training timesteps
         """
-        # Configure logging (TensorBoard)
-        new_logger = configure("logs", ["stdout", "tensorboard"])
-        self.model.set_logger(new_logger)
+        # Configure logging (TensorBoard) access with: tensorboard --logdir logs
+        new_logger = configure("logs", ["stdout", "tensorboard"] if self.verbose > 1 else ["tensorboard"])
+        self.model.set_logger(new_logger)  
         
         # Create evaluation environment
         eval_env = get_env(
@@ -184,6 +186,7 @@ class ModelTrainer:
         )
 
         total_timesteps = int(total_timesteps * multiplicator)
+        eval_interval = int(eval_interval * multiplicator)
         num_eval_episodes = 5
 
         if hasattr(self, 'config') and self.verbose >= 1:
@@ -197,7 +200,7 @@ class ModelTrainer:
             self.logger.info(f"{Fore.YELLOW}Training step {step//eval_interval + 1}/{total_timesteps//eval_interval}{Fore.RESET}")
             self.model.learn(total_timesteps=eval_interval, 
                              reset_num_timesteps=False,
-                             log_interval=self.log_interval if self.verbose > 1 else None, 
+                             log_interval=self.log_interval, 
                              progress_bar=self.progress_bar,
                              callback=self.callback_list
                             )
@@ -282,7 +285,7 @@ def main():
     args = parser.parse_args()
     
     # Load configuration (file + command line override)
-    config = load_config(config_path=args.config, args=args)
+    config = load_config(config_path="config/training_config.yaml", args=args)
     
     # Create trainer from configuration
     trainer = ModelTrainer.from_config(config)

@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
 """Play script to watch trained RL Snake models in action."""
-
-import sys
-from pathlib import Path
-
-# Add src to path for imports
-sys.path.append(str(Path(__file__).parent.parent / "src"))
-
 from rl_snake.environment.utils import ModelRenderer
 
 
@@ -18,7 +11,7 @@ def main():
         description="Watch a trained reinforcement learning model play Snake."
     )
     parser.add_argument(
-        "-m", "--model", type=str, default="PPO_0_snake",
+        "-m", "--model", type=str, default="PPO_1_snake",
         help="Name of then trained model to watch."
     )
     parser.add_argument(
