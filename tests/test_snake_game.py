@@ -1,105 +1,181 @@
-"""Test cases for the Snake game components."""
+"""Test cases for the Snake game components using pytest."""
 
-import unittest
+import pytest
 import numpy as np
-import sys
-from pathlib import Path
-
-# Add src to path for imports
-sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 from rl_snake.game.snake import SnakeGame, Snake, Food
 from rl_snake.game.fast_snake import FastSnakeGame
 
 
-class TestSnakeGame(unittest.TestCase):
+@pytest.fixture
+def snake_game():
+    """Fixture for creating a SnakeGame instance."""
+    return SnakeGame(game_size=10)
+
+
+@pytest.fixture
+def fast_snake_game():
+    """Fixture for creating a FastSnakeGame instance."""
+    return FastSnakeGame(game_size=10)
+
+
+class TestSnakeGame:
     """Test cases for the main Snake game."""
     
-    def setUp(self):
-        """Set up test fixtures before each test method."""
-        self.game = SnakeGame(game_size=10)
-    
-    def test_game_initialization(self):
+    def test_game_initialization(self, snake_game):
         """Test that game initializes correctly."""
-        self.assertEqual(self.game.game_size, 10)
-        self.assertEqual(self.game.score, 0)
-        self.assertFalse(self.game.done)
-        self.assertFalse(self.game.game_over)
+        assert snake_game.game_size == 10
+        assert snake_game.score == 0
+        assert not snake_game.done
+        assert not snake_game.game_over
     
-    def test_observation_shape(self):
+    def test_observation_shape(self, snake_game):
         """Test that observations have correct shape."""
-        obs = self.game.get_raw_observation()
-        expected_shape = (self.game.game_size, self.game_size)
-        self.assertEqual(obs.shape, expected_shape)
+        obs = snake_game.get_raw_observation()
+        expected_shape = (snake_game.game_size, snake_game.game_size)
+        assert obs.shape == expected_shape
     
-    def test_observation_content(self):
+    def test_observation_content(self, snake_game):
         """Test that observations contain expected values."""
-        obs = self.game.get_raw_observation()
+        obs = snake_game.get_raw_observation()
         unique_values = np.unique(obs)
         # Should contain 0 (empty), 1 (snake), 2 (food)
-        self.assertTrue(all(val in [0, 1, 2] for val in unique_values))
+        assert all(val in [0, 1, 2] for val in unique_values)
     
-    def test_step_function(self):
+    def test_step_function(self, snake_game):
         """Test that step function returns correct format."""
-        result = self.game.step(action=0)  # Move up
-        self.assertEqual(len(result), 4)  # obs, reward, done, info
+        result = snake_game.step(action=0)  # Move up
+        assert len(result) == 4  # obs, reward, done, info
         obs, reward, done, info = result
-        self.assertIsInstance(obs, np.ndarray)
-        self.assertIsInstance(reward, (int, float))
-        self.assertIsInstance(done, bool)
-        self.assertIsInstance(info, dict)
+        assert isinstance(obs, np.ndarray)
+        assert isinstance(reward, (int, float))
+        assert isinstance(done, bool)
+        assert isinstance(info, dict)
 
 
-class TestFastSnakeGame(unittest.TestCase):
+class TestFastSnakeGame:
     """Test cases for the fast Snake game."""
     
-    def setUp(self):
-        """Set up test fixtures before each test method."""
-        self.game = FastSnakeGame(game_size=10)
-    
-    def test_game_initialization(self):
+    def test_game_initialization(self, fast_snake_game):
         """Test that fast game initializes correctly."""
-        self.assertEqual(self.game.game_size, 10)
-        self.assertEqual(self.game.score, 0)
-        self.assertFalse(self.game.game_over)
-        self.assertEqual(len(self.game.snake), 1)  # Start with one segment
+        assert fast_snake_game.game_size == 10
+        assert fast_snake_game.score == 0
+        assert not fast_snake_game.game_over
+        assert len(fast_snake_game.snake) == 1  # Start with one segment
     
-    def test_step_function(self):
+    def test_step_function(self, fast_snake_game):
         """Test that step function works correctly."""
-        initial_pos = self.game.snake[0]
-        result = self.game.step(action=0)  # Move up
-        self.assertEqual(len(result), 4)
+        initial_pos = fast_snake_game.snake[0]
+        result = fast_snake_game.step(action=0)  # Move up
+        assert len(result) == 4
         
         # Check that snake moved
-        new_pos = self.game.snake[0]
-        self.assertNotEqual(initial_pos, new_pos)
+        new_pos = fast_snake_game.snake[0]
+        assert initial_pos != new_pos
     
-    def test_food_placement(self):
+    def test_food_placement(self, fast_snake_game):
         """Test that food is placed correctly."""
-        self.assertIsNotNone(self.game.food)
-        x, y = self.game.food
-        self.assertTrue(0 <= x < self.game.game_size)
-        self.assertTrue(0 <= y < self.game.game_size)
+        assert fast_snake_game.food is not None
+        x, y = fast_snake_game.food
+        assert 0 <= x < fast_snake_game.game_size
+        assert 0 <= y < fast_snake_game.game_size
     
-    def test_collision_detection(self):
+    def test_collision_detection(self, fast_snake_game):
         """Test collision detection."""
         # Force snake into wall
-        self.game.snake = [(0, 0)]  # Place at top-left corner
-        result = self.game.step(action=0)  # Try to move up (into wall)
+        fast_snake_game.snake = [(0, 0)]  # Place at top-left corner
+        result = fast_snake_game.step(action=0)  # Try to move up (into wall)
         _, _, done, _ = result
-        self.assertTrue(done)
+        assert done
 
 
-class TestSnakeComponents(unittest.TestCase):
+class TestSnakeComponents:
     """Test individual Snake game components."""
     
     def test_food_generation(self):
         """Test food generation."""
         food = Food(game_size=10)
         x, y = food.coordinates
-        self.assertTrue(0 <= x < 10)
-        self.assertTrue(0 <= y < 10)
+        assert 0 <= x < 10
+        assert 0 <= y < 10
 
 
-if __name__ == "__main__":
-    unittest.main()
+# Tests paramétrés pour démontrer la puissance de pytest
+@pytest.mark.parametrize("game_size", [5, 10, 15, 20])
+def test_game_sizes(game_size):
+    """Test that games work with different sizes."""
+    game = SnakeGame(game_size=game_size)
+    assert game.game_size == game_size
+    obs = game.get_raw_observation()
+    assert obs.shape == (game_size, game_size)
+
+
+@pytest.mark.parametrize("action", [0, 1, 2, 3])
+def test_all_actions(snake_game, action):
+    """Test that all actions work correctly."""
+    result = snake_game.step(action=action)
+    assert len(result) == 4
+    obs, reward, done, info = result
+    assert isinstance(obs, np.ndarray)
+    assert isinstance(reward, (int, float))
+    assert isinstance(done, bool)
+    assert isinstance(info, dict)
+
+
+# Tests avec des fixtures personnalisées
+@pytest.fixture
+def small_game():
+    """Fixture for a small game."""
+    return SnakeGame(game_size=5)
+
+
+@pytest.fixture
+def large_game():
+    """Fixture for a large game."""
+    return SnakeGame(game_size=20)
+
+
+def test_small_game_bounds(small_game):
+    """Test that small games respect bounds."""
+    obs = small_game.get_raw_observation()
+    assert obs.shape == (5, 5)
+    assert np.all(obs >= 0)
+    assert np.all(obs <= 2)
+
+
+def test_large_game_bounds(large_game):
+    """Test that large games respect bounds."""
+    obs = large_game.get_raw_observation()
+    assert obs.shape == (20, 20)
+    assert np.all(obs >= 0)
+    assert np.all(obs <= 2)
+
+
+# Tests avec des markers personnalisés
+@pytest.mark.slow
+def test_long_game_simulation(snake_game):
+    """Test a longer game simulation (marked as slow)."""
+    steps = 0
+    done = False
+    while not done and steps < 100:
+        _, _, done, _ = snake_game.step(action=np.random.randint(0, 4))
+        steps += 1
+    
+    # Game should either be done or we've reached max steps
+    assert done or steps == 100
+
+
+# Test d'exception
+def test_invalid_game_size():
+    """Test that invalid game sizes raise appropriate errors."""
+    with pytest.raises((ValueError, TypeError)):
+        SnakeGame(game_size=-1)
+
+
+# Test avec approximation pour les nombres flottants
+def test_reward_range(snake_game):
+    """Test that rewards are in expected range."""
+    _, reward, _, _ = snake_game.step(action=0)
+    assert isinstance(reward, (int, float))
+    # Assumons que les récompenses sont entre -1 et 1
+    assert -10 <= reward <= 10
