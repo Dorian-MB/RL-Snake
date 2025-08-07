@@ -135,8 +135,8 @@ class SnakeGame:
         self.score = 0
         self.pause = False
         self.snake_grow = False
-        self.game_over = False  # Real game over from pygame
-        self.done = False  # Game over from the agent
+        self.game_over = False  # When closing pygame window
+        self.done = False  # Game over from the game logic
         self.is_render_mode = False
         self.raw_obs = self.get_raw_observation()
     
@@ -191,6 +191,27 @@ class SnakeGame:
     def console_render(self):
         for line in self.raw_obs:
             print(" ".join(str(int(cell)) for cell in line))
+
+    def play_step_by_step(self):
+        """Play step by step render the result."""
+        self.init_pygame()
+        self.init_board(self.display)
+        self.render()
+        action = ""
+        terminated = False
+        while not terminated:
+            action = input("Enter action (z/q/s/d to move, k to kill/quit): ").strip().lower()
+            if action == "k":
+                break
+            if action not in ["z", "q", "s", "d"]:
+                continue
+            action = [0, 1, 2, 3][["z", "q", "s", "d"].index(action)] 
+            self.init_board(self.display)
+            obs, reward, terminated, *_= self.step(action)
+            self.render()
+        print("Game Over!")
+        self.quit()
+
         
     def play(self):
         """Start the interactive game loop."""
@@ -346,11 +367,11 @@ def main():
     """Main function to run the game."""
     import argparse
     parser = argparse.ArgumentParser(description="Run the Snake game engine.")
-    parser.add_argument("--game_size", type=int, default=30, help="Size of the game grid (NxN).")
+    parser.add_argument("-g", "--game_size", type=int, default=10, help="Size of the game grid (NxN).")
     args = parser.parse_args()
     
     game = SnakeGame(game_size=args.game_size)
-    game.play()
+    game.play_step_by_step()
 
 if __name__ == "__main__":
     # print("\ntest_speed: ", test_speed(), "\n")

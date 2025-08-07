@@ -3,7 +3,7 @@
 import numpy as np
 from stable_baselines3 import PPO, DQN, A2C
 from stable_baselines3.common.logger import configure
-from stable_baselines3.common.utils import get_schedule_fn
+from stable_baselines3.common.utils import FloatSchedule, LinearSchedule
 from colorama import Fore
 from tqdm.auto import tqdm
 
@@ -14,7 +14,6 @@ from ..config.config import Config, create_argument_parser, load_config, create_
 from pathlib import Path
 import time
 
-
 class ModelTrainer:
     """
     Trainer class for reinforcement learning models.
@@ -23,7 +22,8 @@ class ModelTrainer:
     for different RL algorithms (PPO, DQN, A2C).
     """
     
-    def __init__(self, model_name: str, 
+    def __init__(self, model_type: str, 
+                 model_name: str = "PPO_snake.zip",
                  load_model: bool = False,
                  fast_game: bool = True,
                  callback_list: list = [],
@@ -49,6 +49,7 @@ class ModelTrainer:
             use_frame_stack: Whether to use frame stacking
             verbose: Verbosity level for training output
         """
+        self.model_type = model_type
         self.model_name = model_name
         self.fast_game = fast_game
         self.policy_kwargs = policy_kwargs
@@ -81,7 +82,8 @@ class ModelTrainer:
                 fast_game=fast_game
             ).model
         else:
-            self.model = self._get_model(model_name, policy_kwargs=policy_kwargs)
+            self.model = self._get_model(model_type, policy_kwargs=policy_kwargs)
+        self._set_log_interval(model_type)
     
     @classmethod
     def from_config(cls, config: Config) -> 'ModelTrainer':
@@ -97,11 +99,16 @@ class ModelTrainer:
         # Create callbacks from configuration
         callback_list = create_callbacks_from_config(config.callbacks)
         return cls(
-            model_name=config.model.name,
+            model_type=config.model.model_type,
+            model_name=config.model.save_name,
             load_model=config.model.load_model,
             fast_game=config.environment.fast_game,
             callback_list=callback_list,
-            policy_kwargs=dict(features_extractor_class=LinearQNet) if config.model.use_policy_kwargs else None,
+            # Improved policy_kwargs with optimal architecture for Snake
+            policy_kwargs=dict(
+                features_extractor_class=LinearQNet,
+                features_extractor_kwargs=dict(features_dim=64, n_layers=3)  # 64->64->64 for better abstraction
+            ) if config.model.use_policy_kwargs else None,
             game_size=config.environment.game_size,
             n_envs=config.environment.n_envs,
             n_stack=config.environment.n_stack,
@@ -111,7 +118,7 @@ class ModelTrainer:
             verbose=config.training.verbose
         )
     
-    def _get_model(self, model_name, policy_kwargs=None):
+    def _get_model(self, model_type, policy_kwargs=None):
         """
         Create and configure the RL model.
         
@@ -122,25 +129,33 @@ class ModelTrainer:
         Returns:
             Configured RL model
         """
-        if model_name == "PPO":
-            self.log_interval = 1
+        if model_type == "PPO":
+            # Utilisation moderne avec FloatSchedule et LinearSchedule de SB3
+            lr_schedule = FloatSchedule(
+                LinearSchedule(start=0.0003, end=0.00001, end_fraction=1.0)
+            )
+            
             model = PPO(
                 "MlpPolicy", 
                 self.train_env,
                 policy_kwargs=policy_kwargs, 
                 verbose=self.verbose,
-                learning_rate=get_schedule_fn(0.0003), 
+                learning_rate=lr_schedule,  # Approche moderne SB3
                 n_steps=100, # Number of steps per update 
                 batch_size=100, # Mini-batch size, warning: n_steps*n_envs % batch_size must be divisible, otherwise training can be inconsistent
             )               
-        elif model_name == "DQN":
-            self.log_interval = 4
+        elif model_type == "DQN":
+            # DQN avec les nouvelles classes SB3
+            lr_schedule = FloatSchedule(
+                LinearSchedule(start=1e-3, end=1e-5, end_fraction=1.0)
+            )
+            
             model = DQN(
                 "MlpPolicy", 
                 self.train_env, 
                 policy_kwargs=policy_kwargs,
                 verbose=self.verbose,
-                learning_rate=1e-3,
+                learning_rate=lr_schedule,  # Moderne et propre
                 buffer_size=10000,
                 learning_starts=1000,
                 target_update_interval=500,
@@ -150,21 +165,33 @@ class ModelTrainer:
                 exploration_initial_eps=1.0,
                 exploration_final_eps=0.05
             )
-        elif model_name == "A2C":
-            self.log_interval = 100
+        elif model_type == "A2C":
+            # A2C avec FloatSchedule
+            lr_schedule = FloatSchedule(
+                LinearSchedule(start=0.0007, end=0.00007, end_fraction=1.0)
+            )
+            
             model = A2C(
                 "MlpPolicy",
                 self.train_env,
                 policy_kwargs=policy_kwargs,
                 verbose=self.verbose,
-                learning_rate=0.0007,
+                learning_rate=lr_schedule,
                 n_steps=5
             )
         else:
-            raise ValueError(f"Model {model_name} is not supported.")
+            raise ValueError(f"Model {model_type} is not supported.")
         return model
 
-    def train(self, total_timesteps:int=10_000, multiplicator: float = 1, eval_interval: int = 10_000):
+    def _set_log_interval(self, model_type):
+        if model_type == "PPO":
+            self.log_interval = 1
+        elif model_type == "DQN":
+            self.log_interval = 4
+        elif model_type == "A2C":
+            self.log_interval = 100
+
+    def train(self, total_timesteps:int=100_000, eval_interval: int = 10_000, multiplicator: float = 1):
         """
         Train the model with periodic evaluation.
         
@@ -172,8 +199,10 @@ class ModelTrainer:
             total_timesteps: Total number of timesteps for training
             multiplicator: Multiplier for total training timesteps
         """
+        logs_path = Path().cwd() / "logs" / self.model_name.split('.')[0]
+        logs_path.mkdir(parents=True, exist_ok=True)
         # Configure logging (TensorBoard) access with: tensorboard --logdir logs
-        new_logger = configure("logs", ["stdout", "tensorboard"] if self.verbose > 1 else ["tensorboard"])
+        new_logger = configure(str(logs_path), ["stdout", "tensorboard"] if self.verbose > 1 else ["tensorboard"])
         self.model.set_logger(new_logger)  
         
         # Create evaluation environment
@@ -260,7 +289,7 @@ class ModelTrainer:
         average_reward = np.sum(all_rewards, axis=1) / num_episodes
         return average_reward
 
-    def save(self, name=""):
+    def save(self, save_name=""):
         """
         Save the trained model.
         
@@ -271,7 +300,8 @@ class ModelTrainer:
         model_dir = Path().cwd() / "models"
         model_dir.mkdir(parents=True, exist_ok=True)
         
-        save_name = f"{self.model_name}_{name}_snake.zip" if name else f"{self.model_name}_snake.zip"
+        save_name = save_name or self.model_name
+        save_name = save_name if save_name.endswith('.zip') else f"{save_name}.zip"
         save_path = model_dir / save_name
         
         self.model.save(save_path)
@@ -294,7 +324,7 @@ def main():
     trainer.train(total_timesteps=config.training.total_timesteps, 
                   multiplicator=config.training.multiplicator,
                   eval_interval=config.training.eval_interval)
-    trainer.save(name=config.model.save_name)
+    trainer.save(save_name=config.model.save_name)
     
 if __name__ == "__main__":
     main()

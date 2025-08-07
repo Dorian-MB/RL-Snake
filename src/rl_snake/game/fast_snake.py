@@ -40,7 +40,7 @@ class FastSnakeGame:
         self.score = 0
         self.food = None
         self._place_food()
-        self.game_over = False
+        self.done = False
         self.n_steps = 0
 
     def _place_food(self):
@@ -61,8 +61,8 @@ class FastSnakeGame:
         Returns:
             Tuple of (observation, reward, done, info)
         """
-        if self.game_over:
-            return self.raw_obs, self.score, self.game_over, self._get_info()
+        if self.done:
+            return self.raw_obs, self.score, self.done, self._get_info()
         self.n_steps += 1
 
         # Directions: 0-Up, 1-Left, 2-Down, 3-Right
@@ -77,8 +77,8 @@ class FastSnakeGame:
         if (new_head in self.snake or 
             new_head[0] < 0 or new_head[0] >= self.game_size or 
             new_head[1] < 0 or new_head[1] >= self.game_size):
-            self.game_over = True
-            return self.raw_obs, self.score, self.game_over, self._get_info()
+            self.done = True
+            return self.raw_obs, self.score, self.done, self._get_info()
 
         self.snake.insert(0, new_head)
 
@@ -89,7 +89,7 @@ class FastSnakeGame:
         else:
             self.snake.pop()
 
-        return self.raw_obs, self.score, self.game_over, self._get_info()
+        return self.raw_obs, self.score, self.done, self._get_info()
 
     def _get_info(self):
         """Get additional game info."""
@@ -97,7 +97,7 @@ class FastSnakeGame:
             "n_steps": self.n_steps,
             "snake_length": len(self.snake),
             "score": self.score,
-            "game_over": self.game_over,
+            "game_over": self.done,
             "food_position": self.food,
             "head_position": self.snake[0],
         }
@@ -127,7 +127,7 @@ class FastSnakeGame:
             print(line, end="\n")
         print()
         
-    def play(self, action):
+    def _play_one_step(self, action):
         """
         Play one step and render the result.
         
@@ -139,6 +139,24 @@ class FastSnakeGame:
         if done:
             print(f"Game Over! Final Score: {score}")
         
+    def play(self):
+        """Play the game in a loop until done."""
+        i = 0
+        while not self.done:
+            action = input("Enter action (0-Up, 1-Left, 2-Down, 3-Right)(q: quit): ")
+            if action == 'q':
+                print("Quitting game.")
+                break
+            if 0 <= int(action) < 4:
+                self._play_one_step(int(action))
+                i += 1
+        print(f"Total steps played: {i}")
+
     def quit(self):
         """Clean up resources (no-op for this implementation)."""
         pass
+
+
+if __name__ == "__main__":
+    game = FastSnakeGame(game_size=10)
+    game.play()

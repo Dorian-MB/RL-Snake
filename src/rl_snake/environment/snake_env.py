@@ -308,12 +308,4 @@ class SnakeEnv(BaseSnakeEnv):
         return self.obs, self._get_info()
 
 
-if __name__ == "__main__":
-    from ..agents.utils import ModelRenderer
-    model = ModelRenderer(
-        name="PPO__snake", 
-        game_size=16, 
-        use_frame_stack=False, 
-        fast_game=False
-    )
-    model.render()
+

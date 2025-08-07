@@ -10,7 +10,8 @@ from typing import Optional, Dict, Any, List
 @dataclass
 class ModelConfig:
     """Model-related configuration."""
-    name: str = "PPO"
+    model_type: str = "PPO"  # PPO, DQN, A2C
+    name: str = "PPO_snake.zip"
     save_name: str = ""
     load_model: bool = False
     use_policy_kwargs: bool = False
@@ -130,8 +131,8 @@ class Config:
         
         # Only override if argument was explicitly provided
         # check if different from default
-        if hasattr(args, 'model') and args.model != 'PPO':
-            self.model.name = args.model
+        if hasattr(args, 'model') and args.model_type != 'PPO':
+            self.model.model_type = args.model_type
         if hasattr(args, 'save_name') and args.save_name:
             self.model.save_name = args.save_name
         if hasattr(args, 'load_model') and args.load_model:
@@ -204,7 +205,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
         help="Load an existing model instead of training a new one."
     )
     parser.add_argument(
-        "-m", "--model", type=str, default="PPO", 
+        "-m", "--model-type", type=str, default="PPO", 
         help="Model type to train (PPO, DQN, A2C)."
     )
     parser.add_argument(

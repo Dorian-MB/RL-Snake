@@ -4,7 +4,7 @@ from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 
-from .snake_env import SnakeEnv
+from .snake_env import SnakeEnv, BaseSnakeEnv
 
 from pathlib import Path
 import numpy as np
@@ -15,7 +15,9 @@ def get_env(n_envs: int = 5,
             use_frame_stack: bool = False, 
             n_stack: int = 4, 
             game_size: int = 30, 
-            fast_game: bool = True):
+            fast_game: bool = True,
+            Env:BaseSnakeEnv = SnakeEnv
+            ):
     """
     Create a vectorized environment for training.
     
@@ -31,7 +33,7 @@ def get_env(n_envs: int = 5,
     """
     # make_vec_env handles the multiprocessing details
     env = make_vec_env(
-        lambda: SnakeEnv(game_size=game_size, fast_game=fast_game),
+        lambda: Env(game_size=game_size, fast_game=fast_game),
         n_envs=n_envs,  
         seed=42    
     )
@@ -130,7 +132,7 @@ class ModelRenderer(ModelLoader):
                 print("-"*20)
                 print(f"Action taken: {action}")
                 print(f"Reward received: {reward}")
-                print("Distance to food:", obs.take(5))
+                print("Distance to food:", obs.take(4))
                 print(f"Step: {step}")
             self.env.render()
             time.sleep(0.1)

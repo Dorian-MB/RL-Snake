@@ -118,3 +118,20 @@ def test_reward_range(any_game):
     assert isinstance(reward, (int, float))
     # Assumons que les récompenses sont entre -1 et 1
     assert -10 <= reward <= 10
+
+class TestGameLogic:
+    """Test cases for game logic."""
+
+    def test_simple_going_up_live_and_death(self, any_game):
+        for _ in range(5):
+            any_game.step(action=0)  # Move up
+            assert not any_game.done
+        any_game.step(action=0)  # Move up
+        assert any_game.done
+    
+    # def test_die_from_itself(self, any_game):
+    #     """Test that the snake dies when it runs into itself."""
+    #     any_game.snake = [(1, 1), (1, 2), (1, 3), (2, 3), (2, 2), (2, 1)] # Need refacto on pygame game
+    #     any_game.food = (9, 9)
+    #     any_game.step(action=2)  # Move down
+    #     assert any_game.done
