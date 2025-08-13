@@ -1,5 +1,6 @@
 """Model training utilities and trainer class for RL agents."""
 
+import torch
 import numpy as np
 from stable_baselines3 import PPO, DQN, A2C
 from stable_baselines3.common.logger import configure
@@ -33,7 +34,8 @@ class ModelTrainer:
                  n_stack: int = 4, 
                  use_frame_stack: bool = False,
                  progress_bar: bool = True,
-                 config=None,
+                 config: Config = None,
+                 device: str = "auto",
                  verbose: int = 0):
         """
         Initialize the model trainer.
@@ -71,7 +73,8 @@ class ModelTrainer:
             n_stack=n_stack, 
             game_size=game_size
         )
-        
+
+        self.device = self._select_device() if ( device == "auto" or device is None) else torch.device(device)
         if load_model:
             self.model = ModelLoader(
                 name=model_name, 
@@ -85,6 +88,16 @@ class ModelTrainer:
             self.model = self._get_model(model_type, policy_kwargs=policy_kwargs)
         self._set_log_interval(model_type)
     
+    def _select_device(self):
+        # DirectML (AMD/Intel/Nvidia via DML) en priorité sur Windows
+        try:
+            import torch_directml
+            return torch_directml.device()
+        except Exception:
+            pass
+        # Sinon CUDA si dispo, sinon CPU
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     @classmethod
     def from_config(cls, config: Config) -> 'ModelTrainer':
         """
@@ -115,6 +128,7 @@ class ModelTrainer:
             use_frame_stack=config.environment.use_frame_stack,
             progress_bar=config.training.progress_bar,
             config=config,
+            device=config.training.device,
             verbose=config.training.verbose
         )
     
@@ -138,6 +152,7 @@ class ModelTrainer:
             model = PPO(
                 "MlpPolicy", 
                 self.train_env,
+                device=self.device,
                 policy_kwargs=policy_kwargs, 
                 verbose=self.verbose,
                 learning_rate=lr_schedule,  # Approche moderne SB3
@@ -153,6 +168,7 @@ class ModelTrainer:
             model = DQN(
                 "MlpPolicy", 
                 self.train_env, 
+                device=self.device,
                 policy_kwargs=policy_kwargs,
                 verbose=self.verbose,
                 learning_rate=lr_schedule,  # Moderne et propre
@@ -174,6 +190,7 @@ class ModelTrainer:
             model = A2C(
                 "MlpPolicy",
                 self.train_env,
+                device=self.device,
                 policy_kwargs=policy_kwargs,
                 verbose=self.verbose,
                 learning_rate=lr_schedule,
@@ -205,6 +222,13 @@ class ModelTrainer:
         new_logger = configure(str(logs_path), ["stdout", "tensorboard"] if self.verbose > 1 else ["tensorboard"])
         self.model.set_logger(new_logger)  
         
+        if isinstance(self.config, Config):
+            total_timesteps = self.config.training.total_timesteps
+            eval_interval = self.config.training.eval_interval
+            multiplicator = self.config.training.multiplicator
+            if self.verbose >= 1:
+                self.logger.info(f"{Fore.CYAN}{self.config}{Fore.RESET}")
+
         # Create evaluation environment
         eval_env = get_env(
             use_frame_stack=self.use_frame_stack, 
@@ -217,9 +241,6 @@ class ModelTrainer:
         total_timesteps = int(total_timesteps * multiplicator)
         eval_interval = int(eval_interval * multiplicator)
         num_eval_episodes = 5
-
-        if hasattr(self, 'config') and self.verbose >= 1:
-            self.logger.info(f"{Fore.CYAN}{self.config}{Fore.RESET}")
 
         self.logger.info(f"{Fore.CYAN}Starting training with {total_timesteps:,} timesteps{Fore.RESET}")
         
@@ -259,11 +280,10 @@ class ModelTrainer:
             if isinstance(obs, tuple):
                 obs = obs[0]
             
-            terminated = False
+            terminated = np.array([False])
             total_rewards = 0
-            
-            # Limit steps to prevent infinite loops
-            for _ in range(100):
+            # TODO REFACTOR
+            while not terminated.all():
                 # Get action from model
                 action, _states = self.model.predict(obs, deterministic=True)
                 
@@ -274,16 +294,21 @@ class ModelTrainer:
                 if len(step_result) == 5:  # Gymnasium format
                     obs, reward, terminated, truncated, info = step_result
                     terminated = terminated or truncated
+                    # Ensure terminated is a list-like (list or np.ndarray)
+                    if not isinstance(terminated, (list, np.ndarray)):
+                        terminated = [terminated]
                 else:  # Gym format
                     obs, reward, terminated, info = step_result
-                    
+                    if not isinstance(terminated, (list, np.ndarray)):
+                        terminated = [terminated] if not isinstance(terminated, list) else terminated
+
                 total_rewards += reward
-                
-                # Check if episode is done
-                if (isinstance(terminated, bool) and terminated) or \
-                (hasattr(terminated, '__iter__') and all(terminated)):
-                    break
-                
+
+                # print(f"Step reward: {reward}, Total rewards: {total_rewards}")
+                # print(f"Step terminated: {terminated}")
+
+
+            total_rewards = total_rewards if isinstance(total_rewards, np.ndarray) else np.array(total_rewards)
             all_rewards.append(total_rewards)
         
         average_reward = np.sum(all_rewards, axis=1) / num_episodes
@@ -321,9 +346,7 @@ def main():
     trainer = ModelTrainer.from_config(config)
     
     # Train and save model
-    trainer.train(total_timesteps=config.training.total_timesteps, 
-                  multiplicator=config.training.multiplicator,
-                  eval_interval=config.training.eval_interval)
+    trainer.train()
     trainer.save(save_name=config.model.save_name)
     
 if __name__ == "__main__":

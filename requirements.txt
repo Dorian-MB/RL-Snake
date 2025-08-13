@@ -2,6 +2,7 @@ absl-py==2.3.1
 cloudpickle==3.1.1
 colorama==0.4.6
 contourpy==1.3.2
+coverage==7.10.2
 cycler==0.12.1
 exceptiongroup==1.3.0
 Farama-Notifications==0.0.4
@@ -28,17 +29,22 @@ pygame==2.6.1
 Pygments==2.19.2
 pyparsing==3.2.3
 pytest==8.4.1
+pytest-cov==6.2.1
+pytest-html==4.1.1
+pytest-metadata==3.1.1
 python-dateutil==2.9.0.post0
 pytz==2025.2
 PyYAML==6.0.2
--e git+https://github.com/Dorian-MB/RL-Snake.git@d32ef825b883d1adc71dc2b21fa80c02587c025c#egg=rl_snake
+-e git+https://github.com/Dorian-MB/RL-Snake.git@1aab3742d875caba62f1bfab18e8536df45655d5#egg=rl_snake
 six==1.17.0
 stable_baselines3==2.7.0
 sympy==1.14.0
 tensorboard==2.20.0
 tensorboard-data-server==0.7.2
 tomli==2.2.1
-torch==2.7.1
+torch==2.4.1
+torch-directml==0.2.5.dev240914
+torchvision==0.19.1
 tqdm==4.67.1
 typing_extensions==4.14.1
 tzdata==2025.2

@@ -35,6 +35,7 @@ class TrainingConfig:
     progress_bar: bool = True
     total_timesteps: int = 10_000  
     eval_interval: int = 10_000  
+    device: str = "auto"  # 'cpu' or 'cuda' for GPU, 'auto' to select automatically
 
 
 @dataclass
@@ -128,7 +129,7 @@ class Config:
     def merge_with_args(self, args: argparse.Namespace) -> 'Config':
         """Merge configuration with command line arguments (args override config)."""
         #! Problem: if provided arg is same as default values (in args parser), they will not be overridden
-        
+        # TODO: Rework need to loop insteed of itering 'if' statement
         # Only override if argument was explicitly provided
         # check if different from default
         if hasattr(args, 'model') and args.model_type != 'PPO':
@@ -161,7 +162,9 @@ class Config:
             self.training.verbose = args.verbose
         if hasattr(args, 'progress_bar') and args.progress_bar:
             self.training.progress_bar = True
-            
+        if hasattr(args, 'device') and args.device != "auto":
+            self.training.device = args.device
+
         # Callbacks overrides
         if hasattr(args, 'no_callbacks') and args.no_callbacks:
             self.callbacks.enabled = False
@@ -194,7 +197,12 @@ def create_argument_parser() -> argparse.ArgumentParser:
         "-c", "--config", type=str, default="config/training_config.yaml",
         help="Path to configuration file."
     )
-    
+
+    parser.add_argument(
+        "--device", type=str, default="auto",
+        help="Device to use for training (cpu, cuda, auto)."
+    )
+
     # Model arguments
     parser.add_argument(
         "-s", "--save-name", type=str, default="", 

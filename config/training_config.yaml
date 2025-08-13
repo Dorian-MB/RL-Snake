@@ -3,7 +3,7 @@
 # Model Configuration
 model:
   model_type: "PPO" # PPO, DQN, A2C
-  save_name: "PPO_4layers64.zip"
+  save_name: "PPO.zip"
   load_model: false
   use_policy_kwargs: true
 
@@ -17,11 +17,12 @@ environment:
 
 # Training Configuration
 training:
-  total_timesteps: 100_000
-  eval_interval: 20_000
+  total_timesteps: 100_00
+  eval_interval: 20_00
   verbose: 1
   progress_bar: false
-  multiplicator: 5
+  multiplicator: 1
+  device: "cpu"
 
 # Callbacks Configuration
 callbacks:
