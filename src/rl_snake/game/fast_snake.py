@@ -1,6 +1,7 @@
 """Fast Snake game implementation without pygame dependencies."""
 
 import random
+
 import numpy as np
 
 DEFAULT_GAME_SIZE = 30
@@ -9,25 +10,25 @@ DEFAULT_GAME_SIZE = 30
 class FastSnakeGame:
     """
     Lightweight Snake game implementation for fast training.
-    
+
     This version doesn't use pygame and focuses on pure game logic
     for faster reinforcement learning training.
     """
-    
+
     def __init__(self, game_size=DEFAULT_GAME_SIZE):
         """
         Initialize the fast Snake game.
-        
+
         Args:
             game_size: Size of the game grid (NxN)
         """
         self.game_size = game_size
         self.reset()
-    
+
     def set_game_size(self, new_size):
         """
         Set a new game size.
-        
+
         Args:
             new_size: New size for the game grid (NxN)
         """
@@ -47,17 +48,17 @@ class FastSnakeGame:
         """Place food at a random position not occupied by the snake."""
         while self.food is None or self.food in self.snake:
             self.food = (
-                random.randint(0, self.game_size - 1), 
-                random.randint(0, self.game_size - 1)
+                random.randint(0, self.game_size - 1),
+                random.randint(0, self.game_size - 1),
             )
 
     def step(self, action):
         """
         Execute one game step.
-        
+
         Args:
             action: Action to take (0-Up, 1-Left, 2-Down, 3-Right)
-            
+
         Returns:
             Tuple of (observation, reward, done, info)
         """
@@ -68,15 +69,16 @@ class FastSnakeGame:
         # Directions: 0-Up, 1-Left, 2-Down, 3-Right
         directions = [(-1, 0), (0, -1), (1, 0), (0, 1)]
         direction = directions[action]
-        new_head = (
-            self.snake[0][0] + direction[0], 
-            self.snake[0][1] + direction[1]
-        )
-        
+        new_head = (self.snake[0][0] + direction[0], self.snake[0][1] + direction[1])
+
         # Check for game over conditions
-        if (new_head in self.snake or 
-            new_head[0] < 0 or new_head[0] >= self.game_size or 
-            new_head[1] < 0 or new_head[1] >= self.game_size):
+        if (
+            new_head in self.snake
+            or new_head[0] < 0
+            or new_head[0] >= self.game_size
+            or new_head[1] < 0
+            or new_head[1] >= self.game_size
+        ):
             self.done = True
             return self.raw_obs, self.score, self.done, self._get_info()
 
@@ -106,11 +108,11 @@ class FastSnakeGame:
     def raw_obs(self):
         """Get the current game observation."""
         return self.get_raw_observation()
-    
+
     def get_raw_observation(self):
         """
         Get the current game state as a numpy array.
-        
+
         Returns:
             numpy array where 0=empty, 1=snake, 2=food
         """
@@ -120,17 +122,17 @@ class FastSnakeGame:
         x, y = self.food
         raw_obs[x, y] = 2
         return raw_obs
-    
+
     def render(self):
         """Render the game state to console."""
         for line in self.raw_obs:
             print(line, end="\n")
         print()
-        
+
     def _play_one_step(self, action):
         """
         Play one step and render the result.
-        
+
         Args:
             action: Action to take
         """
@@ -138,13 +140,13 @@ class FastSnakeGame:
         self.render()
         if done:
             print(f"Game Over! Final Score: {score}")
-        
+
     def play(self):
         """Play the game in a loop until done."""
         i = 0
         while not self.done:
             action = input("Enter action (0-Up, 1-Left, 2-Down, 3-Right)(q: quit): ")
-            if action == 'q':
+            if action == "q":
                 print("Quitting game.")
                 break
             if 0 <= int(action) < 4:

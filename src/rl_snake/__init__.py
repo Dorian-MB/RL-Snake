@@ -9,9 +9,9 @@ __author__ = "Dorian"
 
 # Import main components
 try:
-    from .environment.snake_env import SnakeEnv
-    from .agents.trainer import ModelTrainer
     from .agents.feature_extractor import LinearQNet
+    from .agents.trainer import ModelTrainer
+    from .environment.snake_env import SnakeEnv
     from .environment.utils import ModelLoader, ModelRenderer
 except ImportError:
     # Handle import errors gracefully during package installation
