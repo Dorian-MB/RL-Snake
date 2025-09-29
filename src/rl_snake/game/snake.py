@@ -217,6 +217,7 @@ class SnakeGame:
             if action == "k":
                 break
             if action not in ["z", "q", "s", "d"]:
+                print("Invalid action, please enter z/q/s/d or k to quit.")
                 continue
             action = [0, 1, 2, 3][["z", "q", "s", "d"].index(action)]
             self.init_board(self.display)
@@ -397,6 +398,7 @@ def main():
 
     game = SnakeGame(game_size=args.game_size)
     game.play_step_by_step()
+    # game.play()
 
 
 if __name__ == "__main__":
