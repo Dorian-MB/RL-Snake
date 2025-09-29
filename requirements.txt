@@ -35,7 +35,6 @@ pytest-metadata==3.1.1
 python-dateutil==2.9.0.post0
 pytz==2025.2
 PyYAML==6.0.2
--e git+https://github.com/Dorian-MB/RL-Snake.git@1aab3742d875caba62f1bfab18e8536df45655d5#egg=rl_snake
 six==1.17.0
 stable_baselines3==2.7.0
 sympy==1.14.0
