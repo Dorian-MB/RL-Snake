@@ -102,15 +102,16 @@ class ModelTrainer:
         self._set_log_interval(model_type)
 
     def _select_device(self):
-        # DirectML (AMD/Intel/Nvidia via DML) en priorité sur Windows
-        try:
-            import torch_directml
+        from .utils import is_gpu_available
 
-            return torch_directml.device()
-        except Exception:
-            pass
-        # Sinon CUDA si dispo, sinon CPU
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        gpu_available, gpu_type, device = is_gpu_available()
+
+        if gpu_available:
+            print(f"Utilisation du GPU {gpu_type.upper()}: {device}")
+        else:
+            print(f"Utilisation du CPU: {device}")
+
+        return device
 
     @classmethod
     def from_config(cls, config: Config) -> "ModelTrainer":
