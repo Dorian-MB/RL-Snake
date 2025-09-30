@@ -33,14 +33,17 @@ class LinearQNet(BaseFeaturesExtractor):
                 torch.as_tensor(observation_space.sample()[None]).float()
             ).shape[1]
 
-        # Build dynamic architecture: n_layers of features_dim neurons each
         layers = []
+        # Build dynamic architecture: n_layers of features_dim neurons each
         # First layer: input -> features_dim
-        layers.extend([nn.Linear(n_flatten, features_dim), nn.ReLU()])
-
         # Hidden layers: features_dim -> features_dim
-        for _ in range(n_layers - 1):
-            layers.extend([nn.Linear(features_dim, features_dim), nn.ReLU()])
+        for i in range(n_layers):
+            in_dim = features_dim if i > 0 else n_flatten
+            layers.extend([nn.Linear(in_dim, features_dim), 
+                           nn.LayerNorm(features_dim),
+                           nn.ReLU(),
+                           nn.Dropout(0.2),
+                           ])
 
         self.linear = nn.Sequential(*layers)
 

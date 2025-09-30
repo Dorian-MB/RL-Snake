@@ -21,7 +21,7 @@ training:
   eval_interval: 20_00
   verbose: 1
   progress_bar: false
-  multiplicator: 1
+  multiplicator: 5
   device: "cpu"
 
 # Callbacks Configuration
