@@ -17,8 +17,8 @@ environment:
 
 # Training Configuration
 training:
-  total_timesteps: 100_00
-  eval_interval: 20_00
+  total_timesteps: 100_000
+  eval_interval: 20_000
   verbose: 1
   progress_bar: false
   multiplicator: 5
