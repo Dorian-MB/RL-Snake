@@ -2,6 +2,8 @@
 
 Implementation of reinforcement learning models playing the Snake game using Stable Baselines3 and Pygame.
 
+![Snake Agent Demo](gifs/gameplay_PPO_4layers64_20250930_170543.gif)
+
 ## Features
 
 - **Multiple RL Algorithms**: Support for PPO, DQN, and A2C
@@ -11,6 +13,7 @@ Implementation of reinforcement learning models playing the Snake game using Sta
 - **Comprehensive Testing**: Unit tests for game logic and RL environment
 - **Easy-to-use Scripts**: Simple command-line interface for training and evaluation
 - **Pre-configured Training Profiles**: Ready-to-use configurations for different scenarios
+- **GIF Recording**: Record gameplay sessions as animated GIF files
 
 ## Project Structure
 
@@ -30,6 +33,7 @@ RL-Snake/
 ├── notebooks/              # Jupyter notebooks
 ├── models/                 # Trained models
 ├── logs/                   # Training logs
+├── gifs/                   # Generated GIF recordings
 └── requirements.txt        # Dependencies
 ```
 
@@ -77,17 +81,23 @@ python scripts/train.py -m DQN -g 20 -n 8 -x 10
 
 ```bash
 # Watch a trained model play
-python scripts/play.py -m PPO_snake
+rl-snake-play -m PPO_4layers64
 
 # Use specific game settings
-python scripts/play.py -m DQN_snake -g 20
+rl-snake-play -m PPO_4layers64 -g 20
+
+# Record gameplay as GIF
+rl-snake-play -m PPO_4layers64 --save-gif
+
+# Record with custom filename and path
+rl-snake-play -m PPO_4layers64 --save-gif --gif-path="gifs/my_agent.gif"
 ```
 
 ### Evaluating Model Performance
 
 ```bash
 # Evaluate over 100 episodes
-python scripts/evaluate.py -m PPO_snake -e 100
+rl-snake-evaluate -m PPO_4layers64 -e 100
 ```
 
 ## Training Options
@@ -99,6 +109,28 @@ python scripts/evaluate.py -m PPO_snake -e 100
 - `-f, --fast-game`: Use fast game implementation
 - `--use-frame-stack`: Enable frame stacking
 - `-u, --use-policy-kwargs`: Use custom neural network architecture
+
+## GIF Recording Options
+
+When using `rl-snake-play`, you can record gameplay sessions as animated GIF files:
+
+- `--save-gif`: Enable GIF recording
+- `--gif-path PATH`: Specify custom output path (auto-generated if not provided)
+
+### GIF Recording Examples
+
+```bash
+# Basic GIF recording (auto-generated filename)
+rl-snake-play -m PPO_4layers64 --save-gif
+
+# Custom filename with timestamp
+rl-snake-play -m PPO_4layers64 --save-gif --gif-path="gifs/snake_$(date +%Y%m%d_%H%M%S).gif"
+
+# Record larger game grid
+rl-snake-play -m PPO_4layers64 -g 20 --save-gif --gif-path="gifs/snake_20x20.gif"
+```
+
+GIF files are saved with 10 FPS and will automatically loop when viewed in browsers or image viewers.
 
 ## Callbacks Configuration
 

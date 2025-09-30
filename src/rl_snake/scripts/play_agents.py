@@ -35,6 +35,17 @@ def main():
         action="store_true",
         help="Use fast game implementation (not recommended for visual play).",
     )
+    parser.add_argument(
+        "--save-gif",
+        action="store_true",
+        help="Save the gameplay as a GIF file.",
+    )
+    parser.add_argument(
+        "--gif-path",
+        type=str,
+        default=None,
+        help="Path to save the GIF file (auto-generated if not specified).",
+    )
 
     args = parser.parse_args()
 
@@ -48,9 +59,14 @@ def main():
             game_size=args.game_size,
             n_stack=args.n_stack,
             fast_game=args.fast_game,
+            save_gif=args.save_gif,
+            gif_path=args.gif_path,
         )
 
-        print("Starting game visualization...")
+        if args.save_gif:
+            print("Starting game visualization (GIF recording enabled)...")
+        else:
+            print("Starting game visualization...")
         renderer.render()
 
     except FileNotFoundError as e:

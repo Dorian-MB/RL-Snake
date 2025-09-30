@@ -3,7 +3,9 @@
 import time
 from pathlib import Path
 
+import imageio
 import numpy as np
+import pygame
 from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
@@ -105,6 +107,8 @@ class ModelRenderer(ModelLoader):
         n_stack: int = 4,
         fast_game: bool = False,
         verbose: bool = True,
+        save_gif: bool = False,
+        gif_path: str = None,
     ):
         """
         Initialize model renderer.
@@ -115,10 +119,26 @@ class ModelRenderer(ModelLoader):
             game_size: Size of the game grid
             n_stack: Number of frames to stack
             fast_game: Whether to use fast game (usually False for rendering)
+            verbose: Whether to print game information
+            save_gif: Whether to save the gameplay as a GIF
+            gif_path: Path to save the GIF (auto-generated if None)
         """
         super().__init__(name, use_frame_stack, game_size, n_stack, fast_game=fast_game)
         self.env = SnakeEnv(game_size=game_size, fast_game=fast_game)
         self.verbose = verbose
+        self.save_gif = save_gif
+
+        if save_gif:
+            base_path = Path().cwd() / "gifs"
+            base_path.mkdir(exist_ok=True, parents=True)
+            if gif_path is None:
+                timestamp = time.strftime("%Y%m%d_%H%M%S")
+                gif_path = f"gameplay_{name.replace('.zip', '')}_{timestamp}.gif"
+            self.gif_path = base_path / gif_path
+            self.frames = []
+        else:
+            self.gif_path = None
+            self.frames = None
 
     def render(self):
         """Render the model playing the game."""
@@ -147,6 +167,14 @@ class ModelRenderer(ModelLoader):
                 print("Distance to food:", obs.take(4))
                 print(f"Step: {step}")
             self.env.render()
+
+            # Capture frame for GIF if enabled
+            if self.save_gif and self.env.snake_game.is_render_mode:
+                frame = pygame.surfarray.array3d(self.env.snake_game.display)
+                # Convert from (width, height, channels) to (height, width, channels)
+                frame = frame.swapaxes(0, 1)
+                self.frames.append(frame)
+
             time.sleep(0.1)
 
         if self.verbose:
@@ -155,4 +183,22 @@ class ModelRenderer(ModelLoader):
             print(f"Total steps taken: {step}")
             print(f"Total reward: {Total_reward}")
             print(f"Final score: {self.env.snake_game.score}")
+
+        # Save GIF if enabled
+        if self.save_gif and self.frames:
+            self._save_gif()
+
         self.env.close()
+
+    def _save_gif(self):
+        """Save captured frames as a GIF file."""
+        if not self.frames:
+            print("Warning: No frames captured for GIF creation.")
+            return
+
+        try:
+            print(f"Saving GIF with {len(self.frames)} frames to: {self.gif_path}")
+            imageio.mimsave(self.gif_path, self.frames, fps=10, duration=0.1)
+            print(f"GIF saved successfully: {self.gif_path}")
+        except Exception as e:
+            print(f"Error saving GIF: {e}")
