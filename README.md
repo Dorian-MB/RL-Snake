@@ -2,7 +2,7 @@
 
 Implementation of reinforcement learning models playing the Snake game using Stable Baselines3 and Pygame.
 
-![Snake Agent Demo](gifs/gameplay_PPO_4layers64_20250930_170543.gif)
+![Snake Agent Demo](gameplay_PPO_best_20250930_201502.gif)
 
 ## Features
 
