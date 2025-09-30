@@ -101,7 +101,7 @@ class ModelLoader:
         custom_objects = None
         class_path = model_dir / "feature_extractor.dill"
 
-        if class_path.exists() and False:
+        if class_path.exists():
             try:
                 import dill
                 import json
