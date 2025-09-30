@@ -360,16 +360,46 @@ class ModelTrainer:
         Args:
             name: Additional name suffix for the saved model
         """
-        # Use new models directory
-        model_dir = Path().cwd() / "models"
+        # Prepare save name
+        save_name = save_name or self.model_name
+        save_name = save_name.replace(".zip", "")  # Remove .zip if present
+
+        # Create model directory structure: models/model_name/
+        model_dir = Path().cwd() / "models" / save_name
         model_dir.mkdir(parents=True, exist_ok=True)
 
-        save_name = save_name or self.model_name
-        save_name = save_name if save_name.endswith(".zip") else f"{save_name}.zip"
-        save_path = model_dir / save_name
+        # Save paths
+        model_path = model_dir / f"{save_name}.zip"
 
-        self.model.save(save_path)
-        self.logger.info(f"{Fore.GREEN}Model saved to: {save_path}{Fore.RESET}")
+        # Save the model
+        self.model.save(model_path)
+        self.logger.info(f"{Fore.GREEN}Model saved to: {model_path}{Fore.RESET}")
+
+        # Save the feature extractor class if using custom policy
+        if self.policy_kwargs and 'features_extractor_class' in self.policy_kwargs:
+            try:
+                import dill
+                import json
+
+                # Save the class
+                extractor_class = self.policy_kwargs['features_extractor_class']
+                class_path = model_dir / "feature_extractor.dill"
+
+                with open(class_path, 'wb') as f:
+                    dill.dump(extractor_class, f)
+
+                self.logger.info(f"{Fore.GREEN}Feature extractor class saved to: {class_path}{Fore.RESET}")
+
+                # Save the kwargs if they exist
+                if 'features_extractor_kwargs' in self.policy_kwargs:
+                    kwargs_path = model_dir / "feature_extractor_kwargs.json"
+                    with open(kwargs_path, 'w') as f:
+                        json.dump(self.policy_kwargs['features_extractor_kwargs'], f, indent=2)
+                    self.logger.info(f"{Fore.GREEN}Feature extractor kwargs saved to: {kwargs_path}{Fore.RESET}")
+
+            except ImportError:
+                self.logger.warning(f"{Fore.YELLOW}dill not installed. Feature extractor class not saved.{Fore.RESET}")
+                self.logger.warning(f"{Fore.YELLOW}Install with: pip install dill{Fore.RESET}")
 
 
 def main():

@@ -65,9 +65,18 @@ class ModelLoader:
             n_stack: Number of frames to stack
             fast_game: Whether to use fast game implementation
         """
-        name = name if name.endswith(".zip") else f"{name}.zip"
-        # Updated path to use models folder
-        path = Path().cwd() / "models" / name
+        # Remove .zip extension if present
+        base_name = name.replace(".zip", "")
+
+        # Try new structure first: models/model_name/model_name.zip
+        model_dir = Path().cwd() / "models" / base_name
+        path = model_dir / f"{base_name}.zip"
+
+        # Fallback to old structure: models/model_name.zip
+        if not path.exists():
+            path = Path().cwd() / "models" / f"{base_name}.zip"
+            model_dir = path.parent
+
         if not path.exists():
             raise FileNotFoundError(
                 f"Model file {path} does not exist. Please train the model first."
@@ -76,7 +85,7 @@ class ModelLoader:
         self.n_stack = n_stack if use_frame_stack else 1
         self.use_frame_stack = use_frame_stack
         self.n_envs = n_envs
-        self.name = name
+        self.name = base_name
         self.game_size = game_size
         self.fast_game = fast_game
 
@@ -88,12 +97,68 @@ class ModelLoader:
             n_envs=n_envs,
         )
 
-        if "PPO" in name:
-            self.model = PPO.load(path, env=env)
-        elif "DQN" in name:
-            self.model = DQN.load(path, env=env)
-        else:
-            raise ValueError(f"Model {name} is not supported for rendering.")
+        # Try to load custom feature extractor class
+        custom_objects = None
+        class_path = model_dir / "feature_extractor.dill"
+
+        if class_path.exists() and False:
+            try:
+                import dill
+                import json
+
+                # Load the class
+                with open(class_path, 'rb') as f:
+                    extractor_class = dill.load(f)
+
+                # Load the kwargs if they exist
+                kwargs_path = model_dir / "feature_extractor_kwargs.json"
+                extractor_kwargs = {}
+                if kwargs_path.exists():
+                    with open(kwargs_path, 'r') as f:
+                        extractor_kwargs = json.load(f)
+                    print(f"✅ Loaded feature extractor kwargs: {extractor_kwargs}")
+
+                custom_objects = {
+                    "policy_kwargs": {
+                        "features_extractor_class": extractor_class,
+                        "features_extractor_kwargs": extractor_kwargs
+                    }
+                }
+                print(f"✅ Loaded custom feature extractor from: {class_path}")
+            except ImportError:
+                print(f"⚠️  dill not installed, cannot load custom feature extractor")
+            except Exception as e:
+                print(f"⚠️  Error loading feature extractor: {e}")
+
+        # Load the model
+        try:
+            if "PPO" in base_name:
+                self.model = PPO.load(path, env=env, custom_objects=custom_objects)
+            elif "DQN" in base_name:
+                self.model = DQN.load(path, env=env, custom_objects=custom_objects)
+            else:
+                raise ValueError(f"Model {base_name} is not supported for rendering.")
+        except (RuntimeError, ValueError) as e:
+            if custom_objects is not None and ("state_dict" in str(e) or "parameter group" in str(e)):
+                # Architecture mismatch between saved files
+                error_msg = f"""
+                    ❌ INCOMPATIBILITY ERROR ❌
+                    There is a mismatch between the saved model files in: {model_dir}
+
+                    The .zip model expects a different architecture than what's defined in:
+                    - feature_extractor.dill (the saved class)
+                    - feature_extractor_kwargs.json (the parameters)
+
+                    Possible solutions:
+                    1. Delete feature_extractor.dill and re-create it with your current LinearQNet class
+                    2. Re-train the model to regenerate all files consistently
+                    3. Use a notebook to recreate the .dill file with the correct class version
+
+                    Original error: {str(e)}
+                    """
+                raise RuntimeError(error_msg) from e
+            else:
+                raise
 
 
 class ModelRenderer(ModelLoader):

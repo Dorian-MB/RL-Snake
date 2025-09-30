@@ -15,7 +15,7 @@ class LinearQNet(BaseFeaturesExtractor):
     activations.
     """
 
-    def __init__(self, observation_space, features_dim=64, n_layers=4):
+    def __init__(self, observation_space, features_dim=64, n_layers=3):
         """
         Initialize the feature extractor.
 
@@ -40,9 +40,9 @@ class LinearQNet(BaseFeaturesExtractor):
         for i in range(n_layers):
             in_dim = features_dim if i > 0 else n_flatten
             layers.extend([nn.Linear(in_dim, features_dim), 
-                           nn.LayerNorm(features_dim),
+                        #    nn.LayerNorm(features_dim),
                            nn.ReLU(),
-                           nn.Dropout(0.2),
+                        #    nn.Dropout(0.2),
                            ])
 
         self.linear = nn.Sequential(*layers)
