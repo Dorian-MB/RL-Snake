@@ -8,7 +8,8 @@ import torch
 from colorama import Fore
 from stable_baselines3 import A2C, DQN, PPO
 from stable_baselines3.common.logger import configure
-from stable_baselines3.common.utils import FloatSchedule, LinearSchedule
+from stable_baselines3.common.utils import get_schedule_fn
+# from stable_baselines3.common.utils import FloatSchedule, LinearSchedule # todo Check is usefull
 from tqdm.auto import tqdm
 
 from ..config.config import (
@@ -163,35 +164,28 @@ class ModelTrainer:
         Returns:
             Configured RL model
         """
+        # lr_schedule = FloatSchedule(
+        #     LinearSchedule(start=0.0003, end=0.00001, end_fraction=1.0)
+        # )
         if model_type == "PPO":
-            # Utilisation moderne avec FloatSchedule et LinearSchedule de SB3
-            lr_schedule = FloatSchedule(
-                LinearSchedule(start=0.0003, end=0.00001, end_fraction=1.0)
-            )
-
             model = PPO(
                 "MlpPolicy",
                 self.train_env,
                 device=self.device,
                 policy_kwargs=policy_kwargs,
                 verbose=self.verbose,
-                learning_rate=lr_schedule,  # Approche moderne SB3
+                learning_rate=get_schedule_fn(0.0003),
                 n_steps=100,  # Number of steps per update
                 batch_size=100,  # Mini-batch size, warning: n_steps*n_envs % batch_size must be divisible, otherwise training can be inconsistent
             )
         elif model_type == "DQN":
-            # DQN avec les nouvelles classes SB3
-            lr_schedule = FloatSchedule(
-                LinearSchedule(start=1e-3, end=1e-5, end_fraction=1.0)
-            )
-
             model = DQN(
                 "MlpPolicy",
                 self.train_env,
                 device=self.device,
                 policy_kwargs=policy_kwargs,
                 verbose=self.verbose,
-                learning_rate=lr_schedule,  # Moderne et propre
+                learning_rate=1e-3,
                 buffer_size=10000,
                 learning_starts=1000,
                 target_update_interval=500,
@@ -202,18 +196,13 @@ class ModelTrainer:
                 exploration_final_eps=0.05,
             )
         elif model_type == "A2C":
-            # A2C avec FloatSchedule
-            lr_schedule = FloatSchedule(
-                LinearSchedule(start=0.0007, end=0.00007, end_fraction=1.0)
-            )
-
             model = A2C(
                 "MlpPolicy",
                 self.train_env,
                 device=self.device,
                 policy_kwargs=policy_kwargs,
                 verbose=self.verbose,
-                learning_rate=lr_schedule,
+                learning_rate=0.0007,
                 n_steps=5,
             )
         else:

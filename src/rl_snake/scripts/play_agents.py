@@ -15,7 +15,7 @@ def main():
         "-m",
         "--model",
         type=str,
-        default="PPO_4layers64",
+        default="PPO", # best PPO_4layers64
         help="Name of then trained model to watch.",
     )
     parser.add_argument(

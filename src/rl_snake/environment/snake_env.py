@@ -124,7 +124,7 @@ class SnakeEnv(BaseSnakeEnv):
             game_size: Size of the game grid (NxN)
             fast_game: Whether to use fast game implementation (no pygame)
         """
-        super(SnakeEnv, self).__init__(game_size=game_size, fast_game=fast_game)
+        super(SnakeEnv, self).__init__(game_size=game_size, fast_game=fast_game, seed=seed)
         food = np.array(self.snake_game.food)
         head = np.array(self.snake_game.snake[0])
         self._last_distance = self.manhattan_distance(
@@ -325,5 +325,5 @@ class SnakeEnv(BaseSnakeEnv):
             Tuple of (initial_observation, info)
         """
         self.seed(seed)
-        self.__init__(self.game_size, self.fast_game)
+        self.__init__(self.game_size, self.fast_game, seed=seed)
         return self.obs, self._get_info()
