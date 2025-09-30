@@ -18,7 +18,7 @@ class BaseSnakeEnv(gym.Env, ABC):
     for different Snake environment implementations.
     """
 
-    def __init__(self, game_size, fast_game):
+    def __init__(self, game_size, fast_game, seed=42):
         """
         Initialize the base Snake environment.
 
@@ -37,6 +37,7 @@ class BaseSnakeEnv(gym.Env, ABC):
         self.metadata = {"render_modes": ["human"]}
         self.game_size = game_size
         self.fast_game = fast_game
+        self.seed(seed)
 
         if fast_game:
             from ..game.fast_snake import FastSnakeGame
@@ -91,7 +92,7 @@ class BaseSnakeEnv(gym.Env, ABC):
     def seed(self, seed=42):
         """Set random seed for reproducibility."""
         np.random.seed(seed)
-        torch.manual_seed(seed)
+        # torch.manual_seed(seed)
 
     @abstractmethod
     def step(self, action):
@@ -115,7 +116,7 @@ class SnakeEnv(BaseSnakeEnv):
     - close(): Clean up resources
     """
 
-    def __init__(self, game_size: int = 30, fast_game: bool = True):
+    def __init__(self, game_size: int = 30, fast_game: bool = True, seed: int = 42):
         """
         Initialize the Snake environment.
 

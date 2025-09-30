@@ -106,10 +106,11 @@ class ModelTrainer:
 
         gpu_available, gpu_type, device = is_gpu_available()
 
-        if gpu_available:
-            print(f"Utilisation du GPU {gpu_type.upper()}: {device}")
-        else:
-            print(f"Utilisation du CPU: {device}")
+        if self.verbose >= 1:
+            if gpu_available:
+                self.logger.info(Fore.GREEN + f"Utilisation du GPU {gpu_type.upper()}: {device}" + Fore.RESET)
+            else:
+                self.logger.info(Fore.LIGHTRED_EX + f"Utilisation du CPU: {device}" + Fore.RESET)
 
         return device
 
@@ -323,7 +324,9 @@ class ModelTrainer:
             terminated = np.array([False])
             total_rewards = 0
             # TODO REFACTOR
-            while not terminated.all():
+            max_iter = 1000
+            iter_count = 0
+            while not terminated.all() and iter_count < max_iter:
                 # Get action from model
                 action, _states = self.model.predict(obs, deterministic=True)
 
@@ -347,7 +350,7 @@ class ModelTrainer:
                         )
 
                 total_rewards += reward
-
+                iter_count += 1
                 # print(f"Step reward: {reward}, Total rewards: {total_rewards}")
                 # print(f"Step terminated: {terminated}")
 
