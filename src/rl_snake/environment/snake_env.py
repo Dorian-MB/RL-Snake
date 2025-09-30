@@ -1,13 +1,16 @@
 """Snake environment for reinforcement learning training."""
 
+from abc import ABC, abstractmethod
+
 import gymnasium as gym
 import numpy as np
+import torch
 
 OBS_SHAPE = 7
 SHAPE = (OBS_SHAPE,)
 
 
-class BaseSnakeEnv(gym.Env):
+class BaseSnakeEnv(gym.Env, ABC):
     """
     Base class for Snake environment.
 
@@ -88,11 +91,14 @@ class BaseSnakeEnv(gym.Env):
     def seed(self, seed=42):
         """Set random seed for reproducibility."""
         np.random.seed(seed)
+        torch.manual_seed(seed)
 
+    @abstractmethod
     def step(self, action):
         """Take a step in the environment (to be implemented by subclasses)."""
         raise NotImplementedError("This method should be overridden by subclasses.")
-
+    
+    @abstractmethod
     def reset(self, seed=42):
         """Reset the environment (to be implemented by subclasses)."""
         raise NotImplementedError("This method should be overridden by subclasses.")
