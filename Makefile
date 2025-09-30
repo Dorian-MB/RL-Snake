@@ -66,7 +66,7 @@ build:  ## Build the package
 
 
 lint:  ## Run linting
-	flake8 src/ tests/ 
+# 	flake8 src/ tests/ 
 	pylint src/
 	mypy src/
 

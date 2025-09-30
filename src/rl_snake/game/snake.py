@@ -397,8 +397,8 @@ def main():
     args = parser.parse_args()
 
     game = SnakeGame(game_size=args.game_size)
-    game.play_step_by_step()
-    # game.play()
+    # game.play_step_by_step()
+    game.play()
 
 
 if __name__ == "__main__":
