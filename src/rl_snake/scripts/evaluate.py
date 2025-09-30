@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Evaluation script for trained RL Snake models."""
 
-from rl_snake.agents.feature_extractor import evaluate_model
+from rl_snake.agents.utils import evaluate_model
 from rl_snake.environment.utils import ModelLoader, get_env
 
 
@@ -15,8 +15,8 @@ def main():
     parser.add_argument(
         "-m",
         "--model",
+        default="PPO_best",
         type=str,
-        required=True,
         help="Name of the trained model to evaluate.",
     )
     parser.add_argument(
@@ -68,7 +68,7 @@ def main():
             model_loader.model, eval_env, num_episodes=args.episodes
         )
 
-        print(f"Average reward over {args.episodes} episodes: {avg_reward:.2f}")
+        print(f"Average reward over {args.episodes} episodes: {avg_reward}")
 
     except FileNotFoundError as e:
         print(f"Error: {e}")

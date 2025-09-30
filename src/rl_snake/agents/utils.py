@@ -1,13 +1,77 @@
 """Utility functions for agent management and operations."""
 
+import numpy as np
+from tqdm.auto import tqdm
+
 from ..environment.utils import ModelLoader, ModelRenderer, get_env
 
 # Re-export for backward compatibility
 __all__ = ["ModelLoader", "ModelRenderer", "get_env"]
 
 import logging
+import torch
 
-import torch, sys
+def evaluate_model(model, eval_env, num_episodes=10):
+    """
+    Evaluate model's performance.
+
+    Args:
+        eval_env: Environment for evaluation
+        num_episodes: Number of episodes to evaluate
+
+    Returns:
+        Average reward across episodes
+    """
+    all_rewards = []
+
+    for _ in tqdm(range(num_episodes), desc="Evaluating", total=num_episodes):
+        obs = eval_env.reset()
+        # Handle different environment return formats
+        if isinstance(obs, tuple):
+            obs = obs[0]
+
+        terminated = np.array([False])
+        total_rewards = 0
+        # TODO REFACTOR
+        max_iter = 1000
+        iter_count = 0
+        while not terminated.all() and iter_count < max_iter:
+            # Get action from model
+            action, _states = model.predict(obs, deterministic=True)
+
+            # Take step in environment
+            step_result = eval_env.step(action)
+
+            # Handle different return formats (gym vs gymnasium)
+            if len(step_result) == 5:  # Gymnasium format
+                obs, reward, terminated, truncated, info = step_result
+                terminated = terminated or truncated
+                # Ensure terminated is a list-like (list or np.ndarray)
+                if not isinstance(terminated, (list, np.ndarray)):
+                    terminated = [terminated]
+            else:  # Gym format
+                obs, reward, terminated, info = step_result
+                if not isinstance(terminated, (list, np.ndarray)):
+                    terminated = (
+                        [terminated]
+                        if not isinstance(terminated, list)
+                        else terminated
+                    )
+
+            total_rewards += reward
+            iter_count += 1
+            # print(f"Step reward: {reward}, Total rewards: {total_rewards}")
+            # print(f"Step terminated: {terminated}")
+
+        total_rewards = (
+            total_rewards
+            if isinstance(total_rewards, np.ndarray)
+            else np.array(total_rewards)
+        )
+        all_rewards.append(total_rewards)
+
+    average_reward = np.sum(all_rewards, axis=1) / num_episodes
+    return average_reward
 
 def is_directml_available() -> tuple[bool, torch.device | str]:
     """Vérifie si DirectML est disponible et fonctionnel"""

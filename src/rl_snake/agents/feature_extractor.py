@@ -42,7 +42,7 @@ class LinearQNet(BaseFeaturesExtractor):
             layers.extend([nn.Linear(in_dim, features_dim), 
                         #    nn.LayerNorm(features_dim),
                            nn.ReLU(),
-                        #    nn.Dropout(0.2),
+                        #    nn.Dropout(0.1),
                            ])
 
         self.linear = nn.Sequential(*layers)

@@ -19,7 +19,7 @@ from ..config.config import (
     load_config,
 )
 from .feature_extractor import LinearQNet
-from .utils import Logger, ModelLoader, get_env
+from .utils import Logger, ModelLoader, get_env, evaluate_model
 
 
 class ModelTrainer:
@@ -302,56 +302,7 @@ class ModelTrainer:
         Returns:
             Average reward across episodes
         """
-        all_rewards = []
-
-        for _ in tqdm(range(num_episodes), desc="Evaluating", total=num_episodes):
-            obs = eval_env.reset()
-            # Handle different environment return formats
-            if isinstance(obs, tuple):
-                obs = obs[0]
-
-            terminated = np.array([False])
-            total_rewards = 0
-            # TODO REFACTOR
-            max_iter = 1000
-            iter_count = 0
-            while not terminated.all() and iter_count < max_iter:
-                # Get action from model
-                action, _states = self.model.predict(obs, deterministic=True)
-
-                # Take step in environment
-                step_result = eval_env.step(action)
-
-                # Handle different return formats (gym vs gymnasium)
-                if len(step_result) == 5:  # Gymnasium format
-                    obs, reward, terminated, truncated, info = step_result
-                    terminated = terminated or truncated
-                    # Ensure terminated is a list-like (list or np.ndarray)
-                    if not isinstance(terminated, (list, np.ndarray)):
-                        terminated = [terminated]
-                else:  # Gym format
-                    obs, reward, terminated, info = step_result
-                    if not isinstance(terminated, (list, np.ndarray)):
-                        terminated = (
-                            [terminated]
-                            if not isinstance(terminated, list)
-                            else terminated
-                        )
-
-                total_rewards += reward
-                iter_count += 1
-                # print(f"Step reward: {reward}, Total rewards: {total_rewards}")
-                # print(f"Step terminated: {terminated}")
-
-            total_rewards = (
-                total_rewards
-                if isinstance(total_rewards, np.ndarray)
-                else np.array(total_rewards)
-            )
-            all_rewards.append(total_rewards)
-
-        average_reward = np.sum(all_rewards, axis=1) / num_episodes
-        return average_reward
+        return evaluate_model(self.model, eval_env, num_episodes=num_episodes)
 
     def save(self, save_name=""):
         """
