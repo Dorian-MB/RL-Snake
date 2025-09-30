@@ -7,6 +7,7 @@ TODO.md
 # Test files - tous les fichiers commençant par "test" partout dans le projet
 src/**/test*.*
 notebooks/**/test*.*
+test*.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

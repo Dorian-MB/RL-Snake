@@ -37,12 +37,9 @@ clean:  ## Clean up generated files
 	rm -rf build/ dist/ .pytest_cache/ .coverage htmlcov/
 
 lint:  ## Run linting
-	flake8 src/ tests/ scripts/
+	flake8 src/ tests/ 
+	pylint src/
 	mypy src/
-
-format:  ## Format code
-	black src/ tests/ scripts/
-	isort src/ tests/ scripts/
 
 setup-env:  ## Set up development environment
 	python -m venv env
@@ -70,3 +67,25 @@ build:  ## Build the package
 	python -m build
 
 
+
+
+# Some useful additional commands
+tree:
+	git ls-files | tree --fromfile
+
+py-tree:
+	git ls-files | grep ".py" | tree --fromfile
+
+ruff:
+	ruff format src/
+	isort src/
+
+# compter le nombre de ligne du projet
+count-lines:
+	find . -name "*.py" -type f -exec wc -l {} + | tail -1
+
+tokei:
+	tokei .
+
+cloc:
+	cloc .
