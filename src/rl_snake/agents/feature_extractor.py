@@ -39,11 +39,14 @@ class LinearQNet(BaseFeaturesExtractor):
         # Hidden layers: features_dim -> features_dim
         for i in range(n_layers):
             in_dim = features_dim if i > 0 else n_flatten
-            layers.extend([nn.Linear(in_dim, features_dim), 
-                        #    nn.LayerNorm(features_dim),
-                           nn.ReLU(),
-                        #    nn.Dropout(0.1),
-                           ])
+            layers.extend(
+                [
+                    nn.Linear(in_dim, features_dim),
+                    #    nn.LayerNorm(features_dim),
+                    nn.ReLU(),
+                    #    nn.Dropout(0.1),
+                ]
+            )
 
         self.linear = nn.Sequential(*layers)
 

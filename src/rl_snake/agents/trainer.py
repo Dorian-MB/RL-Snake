@@ -9,6 +9,7 @@ from colorama import Fore
 from stable_baselines3 import A2C, DQN, PPO
 from stable_baselines3.common.logger import configure
 from stable_baselines3.common.utils import get_schedule_fn
+
 # from stable_baselines3.common.utils import FloatSchedule, LinearSchedule # todo Check is usefull
 from tqdm.auto import tqdm
 
@@ -19,7 +20,7 @@ from ..config.config import (
     load_config,
 )
 from .feature_extractor import LinearQNet
-from .utils import Logger, ModelLoader, get_env, evaluate_model
+from .utils import Logger, ModelLoader, evaluate_model, get_env
 
 
 class ModelTrainer:
@@ -109,9 +110,15 @@ class ModelTrainer:
 
         if self.verbose >= 1:
             if gpu_available:
-                self.logger.info(Fore.GREEN + f"Utilisation du GPU {gpu_type.upper()}: {device}" + Fore.RESET)
+                self.logger.info(
+                    Fore.GREEN
+                    + f"Utilisation du GPU {gpu_type.upper()}: {device}"
+                    + Fore.RESET
+                )
             else:
-                self.logger.info(Fore.LIGHTRED_EX + f"Utilisation du CPU: {device}" + Fore.RESET)
+                self.logger.info(
+                    Fore.LIGHTRED_EX + f"Utilisation du CPU: {device}" + Fore.RESET
+                )
 
         return device
 
@@ -327,30 +334,41 @@ class ModelTrainer:
         self.logger.info(f"{Fore.GREEN}Model saved to: {model_path}{Fore.RESET}")
 
         # Save the feature extractor class if using custom policy
-        if self.policy_kwargs and 'features_extractor_class' in self.policy_kwargs:
+        if self.policy_kwargs and "features_extractor_class" in self.policy_kwargs:
             try:
-                import dill
                 import json
 
+                import dill
+
                 # Save the class
-                extractor_class = self.policy_kwargs['features_extractor_class']
+                extractor_class = self.policy_kwargs["features_extractor_class"]
                 class_path = model_dir / "feature_extractor.dill"
 
-                with open(class_path, 'wb') as f:
+                with open(class_path, "wb") as f:
                     dill.dump(extractor_class, f)
 
-                self.logger.info(f"{Fore.GREEN}Feature extractor class saved to: {class_path}{Fore.RESET}")
+                self.logger.info(
+                    f"{Fore.GREEN}Feature extractor class saved to: {class_path}{Fore.RESET}"
+                )
 
                 # Save the kwargs if they exist
-                if 'features_extractor_kwargs' in self.policy_kwargs:
+                if "features_extractor_kwargs" in self.policy_kwargs:
                     kwargs_path = model_dir / "feature_extractor_kwargs.json"
-                    with open(kwargs_path, 'w') as f:
-                        json.dump(self.policy_kwargs['features_extractor_kwargs'], f, indent=2)
-                    self.logger.info(f"{Fore.GREEN}Feature extractor kwargs saved to: {kwargs_path}{Fore.RESET}")
+                    with open(kwargs_path, "w") as f:
+                        json.dump(
+                            self.policy_kwargs["features_extractor_kwargs"], f, indent=2
+                        )
+                    self.logger.info(
+                        f"{Fore.GREEN}Feature extractor kwargs saved to: {kwargs_path}{Fore.RESET}"
+                    )
 
             except ImportError:
-                self.logger.warning(f"{Fore.YELLOW}dill not installed. Feature extractor class not saved.{Fore.RESET}")
-                self.logger.warning(f"{Fore.YELLOW}Install with: pip install dill{Fore.RESET}")
+                self.logger.warning(
+                    f"{Fore.YELLOW}dill not installed. Feature extractor class not saved.{Fore.RESET}"
+                )
+                self.logger.warning(
+                    f"{Fore.YELLOW}Install with: pip install dill{Fore.RESET}"
+                )
 
 
 def main():

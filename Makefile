@@ -36,10 +36,7 @@ clean:  ## Clean up generated files
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
 	rm -rf build/ dist/ .pytest_cache/ .coverage htmlcov/
 
-lint:  ## Run linting
-	flake8 src/ tests/ 
-	pylint src/
-	mypy src/
+
 
 setup-env:  ## Set up development environment
 	python -m venv env
@@ -68,6 +65,10 @@ build:  ## Build the package
 
 
 
+lint:  ## Run linting
+	flake8 src/ tests/ 
+	pylint src/
+	mypy src/
 
 # Some useful additional commands
 tree:

@@ -1,6 +1,6 @@
 """Reinforcement learning agents and training utilities."""
 
-from .trainer import ModelTrainer
-from .feature_extractor import LinearQNet
 from .callbacks import create_snake_callbacks
-from .utils import Logger, get_system_info, is_gpu_available, is_directml_available 
+from .feature_extractor import LinearQNet
+from .trainer import ModelTrainer
+from .utils import Logger, get_system_info, is_directml_available, is_gpu_available

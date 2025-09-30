@@ -9,7 +9,9 @@ from ..environment.utils import ModelLoader, ModelRenderer, get_env
 __all__ = ["ModelLoader", "ModelRenderer", "get_env"]
 
 import logging
+
 import torch
+
 
 def evaluate_model(model, eval_env, num_episodes=10):
     """
@@ -53,9 +55,7 @@ def evaluate_model(model, eval_env, num_episodes=10):
                 obs, reward, terminated, info = step_result
                 if not isinstance(terminated, (list, np.ndarray)):
                     terminated = (
-                        [terminated]
-                        if not isinstance(terminated, list)
-                        else terminated
+                        [terminated] if not isinstance(terminated, list) else terminated
                     )
 
             total_rewards += reward
@@ -73,10 +73,12 @@ def evaluate_model(model, eval_env, num_episodes=10):
     average_reward = np.sum(all_rewards, axis=1) / num_episodes
     return average_reward
 
+
 def is_directml_available() -> tuple[bool, torch.device | str]:
     """Vérifie si DirectML est disponible et fonctionnel"""
     try:
         import torch_directml
+
         dml = torch_directml.device()
         # Test simple pour vérifier que le device fonctionne
         x = torch.randn(2, 2, device=dml)
@@ -84,27 +86,29 @@ def is_directml_available() -> tuple[bool, torch.device | str]:
     except Exception as e:
         return False, str(e)
 
-def is_gpu_available()->tuple[bool, str, torch.device | str]:
+
+def is_gpu_available() -> tuple[bool, str, torch.device | str]:
     """Vérifie si un GPU est disponible (CUDA ou DirectML)"""
-    # Vérifier CUDA 
+    # Vérifier CUDA
     if torch.cuda.is_available():
         return True, "cuda", torch.cuda.get_device_name(0)
-    
-    # Vérifier DirectML 
+
+    # Vérifier DirectML
     dml_available, dml_info = is_directml_available()
     if dml_available:
         return True, "directml", dml_info
-    
+
     return False, "cpu", torch.device("cpu")
+
 
 def get_system_info() -> None:
     """Affiche des informations détaillées sur le système et les GPUs"""
     print("🖥️  === INFORMATIONS SYSTÈME ===")
     print(f"PyTorch version: {torch.__version__}")
-    
+
     # Informations CPU
     print(f"\n🔧 CPU threads disponibles: {torch.get_num_threads()}")
-    
+
     # Informations CUDA
     print(f"\n🟢 CUDA:")
     print(f"  - Disponible: {torch.cuda.is_available()}")
@@ -113,32 +117,33 @@ def get_system_info() -> None:
         print(f"  - Nombre de GPUs: {torch.cuda.device_count()}")
         for i in range(torch.cuda.device_count()):
             print(f"  - GPU {i}: {torch.cuda.get_device_name(i)}")
-    
+
     # Informations DirectML
     print(f"\n🔵 DirectML:")
     try:
         import torch_directml
+
         print(f"  - Disponible: ✅")
-        
+
         # Essayer d'obtenir des infos sur le device
         dml_device = torch_directml.device()
         print(f"  - Device: {dml_device}")
-        
+
         # Test de performance simple
         print(f"\n⚡ Test de performance DirectML:")
         import time
-        
+
         # Test DirectML
         start_time = time.time()
         x = torch.randn(10000, 10000, device=dml_device)
         y = torch.randn(10000, 10000, device=dml_device)
         z = torch.mm(x, y)  # Multiplication matricielle
-        
+
         # Pour DirectML, on force la synchronisation en accédant au résultat
         result_sum = z.sum().item()  # Force la synchronisation
         dml_time = time.time() - start_time
-        print(f"  - DirectML: {dml_time*1000:.2f}ms")
-        
+        print(f"  - DirectML: {dml_time * 1000:.2f}ms")
+
         # Test CPU pour comparaison
         print(f"\n🧪 Benchmark comparatif:")
         start_time = time.time()
@@ -147,16 +152,16 @@ def get_system_info() -> None:
         z_cpu = torch.mm(x_cpu, y_cpu)
         cpu_result = z_cpu.sum().item()
         cpu_time = time.time() - start_time
-        print(f"  - CPU: {cpu_time*1000:.2f}ms")
-        
+        print(f"  - CPU: {cpu_time * 1000:.2f}ms")
+
         # Calcul du speedup
         if dml_time > 0:
             speedup = cpu_time / dml_time
             if speedup > 1:
                 print(f"  - 🚀 Accélération DirectML: {speedup:.2f}x plus rapide")
             else:
-                print(f"  - 🐌 DirectML: {1/speedup:.2f}x plus lent que CPU")
-        
+                print(f"  - 🐌 DirectML: {1 / speedup:.2f}x plus lent que CPU")
+
     except ImportError:
         print(f"  - Disponible: ❌ (torch-directml non installé)")
     except Exception as e:

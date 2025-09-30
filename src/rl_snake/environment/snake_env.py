@@ -98,7 +98,7 @@ class BaseSnakeEnv(gym.Env, ABC):
     def step(self, action):
         """Take a step in the environment (to be implemented by subclasses)."""
         raise NotImplementedError("This method should be overridden by subclasses.")
-    
+
     @abstractmethod
     def reset(self, seed=42):
         """Reset the environment (to be implemented by subclasses)."""
@@ -124,7 +124,9 @@ class SnakeEnv(BaseSnakeEnv):
             game_size: Size of the game grid (NxN)
             fast_game: Whether to use fast game implementation (no pygame)
         """
-        super(SnakeEnv, self).__init__(game_size=game_size, fast_game=fast_game, seed=seed)
+        super(SnakeEnv, self).__init__(
+            game_size=game_size, fast_game=fast_game, seed=seed
+        )
         food = np.array(self.snake_game.food)
         head = np.array(self.snake_game.snake[0])
         self._last_distance = self.manhattan_distance(

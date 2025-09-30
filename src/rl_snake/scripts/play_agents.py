@@ -15,7 +15,7 @@ def main():
         "-m",
         "--model",
         type=str,
-        default="PPO_best", # best PPO_best
+        default="PPO_best",  # best PPO_best
         help="Name of then trained model to watch.",
     )
     parser.add_argument(

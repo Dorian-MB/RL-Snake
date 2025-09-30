@@ -103,25 +103,26 @@ class ModelLoader:
 
         if class_path.exists():
             try:
-                import dill
                 import json
 
+                import dill
+
                 # Load the class
-                with open(class_path, 'rb') as f:
+                with open(class_path, "rb") as f:
                     extractor_class = dill.load(f)
 
                 # Load the kwargs if they exist
                 kwargs_path = model_dir / "feature_extractor_kwargs.json"
                 extractor_kwargs = {}
                 if kwargs_path.exists():
-                    with open(kwargs_path, 'r') as f:
+                    with open(kwargs_path, "r") as f:
                         extractor_kwargs = json.load(f)
                     print(f"✅ Loaded feature extractor kwargs: {extractor_kwargs}")
 
                 custom_objects = {
                     "policy_kwargs": {
                         "features_extractor_class": extractor_class,
-                        "features_extractor_kwargs": extractor_kwargs
+                        "features_extractor_kwargs": extractor_kwargs,
                     }
                 }
                 print(f"✅ Loaded custom feature extractor from: {class_path}")
@@ -139,7 +140,9 @@ class ModelLoader:
             else:
                 raise ValueError(f"Model {base_name} is not supported for rendering.")
         except (RuntimeError, ValueError) as e:
-            if custom_objects is not None and ("state_dict" in str(e) or "parameter group" in str(e)):
+            if custom_objects is not None and (
+                "state_dict" in str(e) or "parameter group" in str(e)
+            ):
                 # Architecture mismatch between saved files
                 error_msg = f"""
                     ❌ INCOMPATIBILITY ERROR ❌
